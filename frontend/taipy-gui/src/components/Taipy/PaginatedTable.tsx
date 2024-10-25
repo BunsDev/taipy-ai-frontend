@@ -184,7 +184,7 @@ const PaginatedTable = (props: TaipyPaginatedTableProps) => {
                     }
                     return pv;
                 }, {});
-                nbWidth = colsOrder.length - nbWidth;
+                nbWidth = nbWidth ? colsOrder.length - nbWidth : 0;
                 if (props.rowClassName) {
                     functions.classNames = functions.classNames || {};
                     functions.classNames[ROW_CLASS_NAME] = props.rowClassName;
@@ -505,7 +505,7 @@ const PaginatedTable = (props: TaipyPaginatedTableProps) => {
                                                 columns[col].width
                                                     ? { width: columns[col].width }
                                                     : nbWidth
-                                                    ? { width: `${100 / nbWidth}%`, maxWidth: 0 }
+                                                    ? { minWidth: `${100 / nbWidth}%` }
                                                     : undefined
                                             }
                                         >
