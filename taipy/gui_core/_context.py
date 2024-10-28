@@ -509,7 +509,11 @@ class _GuiCoreContext(CoreEventConsumerBase):
             finally:
                 self.scenario_refresh(scenario_id)
                 if (scenario or user_scenario) and (sel_scenario_var := args[1] if isinstance(args[1], str) else None):
-                    self.gui._update_var(sel_scenario_var, scenario or user_scenario, on_change=args[2])
+                    self.gui._update_var(
+                        sel_scenario_var[6:] if sel_scenario_var.startswith("_TpLv_") else sel_scenario_var,
+                        scenario or user_scenario,
+                        on_change=args[2],
+                    )
         if scenario:
             if not (reason := is_editable(scenario)):
                 state.assign(error_var, f"Scenario {scenario_id or name} is not editable: {_get_reason(reason)}.")
