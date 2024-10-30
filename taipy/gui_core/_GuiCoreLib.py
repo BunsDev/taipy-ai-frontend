@@ -212,6 +212,7 @@ class _GuiCore(ElementLibrary):
                 "show_owner": ElementProperty(PropertyType.boolean, True),
                 "show_edit_date": ElementProperty(PropertyType.boolean, False),
                 "show_expiration_date": ElementProperty(PropertyType.boolean, False),
+                "show_custom_properties": ElementProperty(PropertyType.boolean, True),
                 "show_properties": ElementProperty(PropertyType.boolean, True),
                 "show_history": ElementProperty(PropertyType.boolean, True),
                 "show_data": ElementProperty(PropertyType.boolean, True),
