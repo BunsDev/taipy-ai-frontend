@@ -14,7 +14,7 @@ import typing as t
 from contextlib import nullcontext
 from operator import attrgetter
 from pathlib import Path
-from types import FrameType
+from types import FrameType, SimpleNamespace
 
 from flask import has_app_context
 
@@ -25,7 +25,7 @@ if t.TYPE_CHECKING:
     from .gui import Gui
 
 
-class State:
+class State(SimpleNamespace):
     """Accessor to the bound variables from callbacks.
 
     `State` is used when you need to access the value of variables
