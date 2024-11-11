@@ -44,6 +44,7 @@ import MainPage from "./pages/MainPage";
 import TaipyRendered from "./pages/TaipyRendered";
 import NotFound404 from "./pages/NotFound404";
 import { getBaseURL } from "../utils";
+import { useLocalStorageWithEvent } from "../hooks";
 
 interface AxiosRouter {
     router: string;
@@ -62,6 +63,8 @@ const Router = () => {
     const refresh = !!Object.keys(routes).length;
     const themeClass = "taipy-" + state.theme.palette.mode;
     const baseURL = getBaseURL();
+
+    useLocalStorageWithEvent(dispatch);
 
     useEffect(() => {
         if (refresh) {
@@ -125,7 +128,7 @@ const Router = () => {
                                                                 <MainPage
                                                                     path={routes["/"]}
                                                                     route={Object.keys(routes).find(
-                                                                        (path) => path !== "/"
+                                                                        (path) => path !== "/",
                                                                     )}
                                                                 />
                                                             }
