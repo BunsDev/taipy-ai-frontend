@@ -11,7 +11,7 @@
 
 import inspect
 import typing as t
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from contextlib import nullcontext
 from operator import attrgetter
 from pathlib import Path
@@ -26,7 +26,7 @@ if t.TYPE_CHECKING:
     from .gui import Gui
 
 
-class State(SimpleNamespace):
+class State(SimpleNamespace, metaclass=ABCMeta):
     """Accessor to the bound variables from callbacks.
 
     `State` is used when you need to access the value of variables
@@ -114,9 +114,7 @@ class State(SimpleNamespace):
         val = attrgetter(name)(self)
         _attrsetter(self, name, val)
 
-    def _set_context(self, gui: "Gui") -> t.ContextManager[None]:
-        return nullcontext()
-
+    @abstractmethod
     def broadcast(self, name: str, value: t.Any):
         """Update a variable on all clients.
 
@@ -127,9 +125,7 @@ class State(SimpleNamespace):
             name (str): The variable name to update.
             value (Any): The new variable value.
         """
-        with self._set_context(self._gui):
-            encoded_name = self._gui._bind_var(name)
-            self._gui._broadcast_all_clients(encoded_name, value)
+        raise NotImplementedError
 
     def __enter__(self):
         self._gui.__enter__()
@@ -195,6 +191,11 @@ class _GuiState(State):
 
     def get_gui(self) -> "Gui":
         return super().__getattribute__(_GuiState.__gui_attr)
+
+    def broadcast(self, name: str, value: t.Any):
+        with self._set_context(self._gui):
+            encoded_name = self._gui._bind_var(name)
+            self._gui._broadcast_all_clients(encoded_name, value)
 
     def __getattribute__(self, name: str) -> t.Any:
         if name == "__class__":

@@ -6,7 +6,47 @@
   </picture>
   </a>
 </div>
-
+</br>
+<div align="center">
+    <img 
+        src="https://img.shields.io/github/license/Avaiga/taipy?style=plastic&color=ff371a&labelColor=1f1f1f" 
+        alt="GitHub License" 
+        height="20px" 
+    />
+    <a target="_blank" href="https://github.com/Avaiga/taipy/releases">
+        <img 
+            alt="GitHub Release" 
+            height="20px" 
+            src="https://img.shields.io/github/v/release/Avaiga/taipy?display_name=release&style=plastic&color=ff371a&labelColor=1f1f1f"
+        ></a>
+</div>
+<div align="center">
+   <img 
+      src="https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-ff371a?style=plastic&labelColor=1f1f1f" 
+        alt="Python version needed: 3.9" 
+    />
+  
+</div>
+<div align="center">
+    <a target="_blank" href="https://docs.taipy.io/en/latest/">
+        <img 
+            src="https://img.shields.io/badge/docs-ff371a?style=plastic&labelColor=1f1f1f&label=Explore" 
+            height="20px" 
+            alt="Explore the docs" 
+        ></a>
+       <a target="_blank" href="https://docs.taipy.io/en/latest/gallery/">
+        <img 
+            src="https://img.shields.io/badge/gallery-ff371a?style=plastic&labelColor=1f1f1f&label=Explore" 
+            height="20px" 
+            alt="Explore Gallery" 
+        ></a>
+    <a target="_blank" href="https://discord.com/invite/SJyz2VJGxV">
+        <img 
+            src="https://img.shields.io/discord/1125797687476887563?style=plastic&labelColor=1f1f1f&logo=discord&logoColor=ff371a&label=Discord&color=ff371a" 
+            height="20px" 
+            alt="Discord support" 
+        ></a>
+</div>
 <h1 align="center">
     Build Python Data & AI web applications
 </h1>
@@ -21,16 +61,6 @@ No more compromises on performance, customization, and scalability.
 <div align="center"> 
      <strong> Go beyond existing libraries  </strong>
 </div>
-
-<p align="center"><h4>
-    <br />
-    <a href="https://docs.taipy.io/en/latest/"><strong>📚 Explore the Docs </strong></a>
-    <br />
-    <a href="https://discord.com/invite/SJyz2VJGxV"><strong>  🫱🏼‍🫲🏼 Discord Support </strong></a>
-    <br />
-    <a href="https://docs.taipy.io/en/latest/gallery/"><strong> 👀 Demos & Examples </strong></a>
-</h4>
-  </p>
 
   ## Table of Contents
 
