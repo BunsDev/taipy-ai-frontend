@@ -53,6 +53,7 @@ class _WsType(Enum):
     GET_ROUTES = "GR"
     FAVICON = "FV"
     BROADCAST = "BC"
+    LOCAL_STORAGE = "LS"
 
 
 NumberTypes = {"int", "int64", "float", "float64"}
@@ -158,8 +159,7 @@ class PropertyType(Enum):
 
 
 @t.overload  # noqa: F811
-def _get_taipy_type(a_type: None) -> None:
-    ...
+def _get_taipy_type(a_type: None) -> None: ...
 
 
 @t.overload
@@ -175,8 +175,7 @@ def _get_taipy_type(a_type: PropertyType) -> t.Type[_TaipyBase]:  # noqa: F811
 @t.overload
 def _get_taipy_type(  # noqa: F811
     a_type: t.Optional[t.Union[t.Type[_TaipyBase], t.Type[Decimator], PropertyType]],
-) -> t.Optional[t.Union[t.Type[_TaipyBase], t.Type[Decimator], PropertyType]]:
-    ...
+) -> t.Optional[t.Union[t.Type[_TaipyBase], t.Type[Decimator], PropertyType]]: ...
 
 
 def _get_taipy_type(  # noqa: F811

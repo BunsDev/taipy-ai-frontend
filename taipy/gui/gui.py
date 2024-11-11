@@ -691,6 +691,8 @@ class Gui:
                         self.__handle_ws_app_id(message)
                     elif msg_type == _WsType.GET_ROUTES.value:
                         self.__handle_ws_get_routes()
+                    elif msg_type == _WsType.LOCAL_STORAGE.value:
+                        self.__handle_ws_local_storage(message)
                     else:
                         self._manage_external_message(msg_type, message)
                 self.__send_ack(message.get("ack_id"))
@@ -1280,6 +1282,27 @@ class Gui:
             },
             send_back_only=True,
         )
+
+    def __handle_ws_local_storage(self, message: t.Any):
+        if not isinstance(message, dict):
+            return
+        name = message.get("name", "")
+        payload = message.get("payload", None)
+        scope_metadata = self._get_data_scope_metadata()
+        if payload is None:
+            return
+        if name == "init":
+            scope_metadata[_DataScopes._META_LOCAL_STORAGE] = payload
+        elif name == "update":
+            key = payload.get("key", "")
+            value = payload.get("value", None)
+            if value is None:
+                del scope_metadata[_DataScopes._META_LOCAL_STORAGE][key]
+            else:
+                scope_metadata[_DataScopes._META_LOCAL_STORAGE][key] = value
+
+    def _get_local_storage(self):
+        return self._get_data_scope_metadata()[_DataScopes._META_LOCAL_STORAGE]
 
     def __send_ws(self, payload: dict, allow_grouping=True, send_back_only=False) -> None:
         grouping_message = self.__get_message_grouping() if allow_grouping else None

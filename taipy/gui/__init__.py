@@ -78,6 +78,7 @@ from ._renderers.json import JsonAdapter
 from .gui_actions import (
     broadcast_callback,
     download,
+    get_local_storage,
     get_module_context,
     get_module_name_from_state,
     get_state_id,

@@ -23,7 +23,8 @@ if t.TYPE_CHECKING:
 class _DataScopes:
     _GLOBAL_ID = "global"
     _META_PRE_RENDER = "pre_render"
-    _DEFAULT_METADATA = {_META_PRE_RENDER: False}
+    _META_LOCAL_STORAGE = "local_storage"
+    _DEFAULT_METADATA = {_META_PRE_RENDER: False, _META_LOCAL_STORAGE: {}}
 
     def __init__(self, gui: "Gui") -> None:
         self.__gui = gui
