@@ -442,14 +442,15 @@ def invoke_long_callback(
         thread_status(thread.name, period / 1000.0, 0)
 
 
-def get_local_storage(state: State) -> t.Optional[t.Dict[str, str]]:
-    """Get all local storage values
+def get_local_storage(state: State, *keys: str) -> t.Optional[t.Union[str, t.Dict[str, str]]]:
+    """Get local storage value(s).
     Arguments:
         state (State^): The current user state as received in any callback.
+        *keys (string): The keys to get from the local storage
     Returns:
         All local storage values
     """
     if state and isinstance(state._gui, Gui):
-        return state._gui._get_local_storage()
+        return state._gui._get_local_storage(*keys)
     _warn("'get_local_storage()' must be called in the context of a callback.")
     return None

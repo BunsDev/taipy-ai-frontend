@@ -1328,8 +1328,19 @@ class Gui:
                 if not self._call_on_exception("on_local_storage_change", e):
                     _warn("Exception raised in on_local_storage_change()", e)
 
-    def _get_local_storage(self):
-        return self._get_data_scope_metadata()[_DataScopes._META_LOCAL_STORAGE]
+    def _get_local_storage(self, *keys: str) -> t.Optional[t.Union[str, t.Dict[str, str]]]:
+        if not keys:
+            return None
+        if len(keys) == 1:
+            if keys[0] in self._get_data_scope_metadata()[_DataScopes._META_LOCAL_STORAGE]:
+                return self._get_data_scope_metadata()[_DataScopes._META_LOCAL_STORAGE][keys[0]]
+            return None
+        # case of multiple keys
+        ls_items = {}
+        for key in keys:
+            if key in self._get_data_scope_metadata()[_DataScopes._META_LOCAL_STORAGE]:
+                ls_items[key] = self._get_data_scope_metadata()[_DataScopes._META_LOCAL_STORAGE][key]
+        return ls_items
 
     def __send_ws(self, payload: dict, allow_grouping=True, send_back_only=False) -> None:
         grouping_message = self.__get_message_grouping() if allow_grouping else None
