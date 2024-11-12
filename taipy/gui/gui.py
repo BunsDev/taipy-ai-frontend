@@ -358,6 +358,19 @@ class Gui:
         The returned HTML content can therefore use both the variables stored in the *state*
         and the parameters provided in the call to `get_user_content_url()^`.
         """
+        self.on_local_storage_change: t.Optional[t.Callable] = None
+        """The function that is called when the local storage is modified.
+
+        It defaults to the `on_local_storage_change()` global function defined in the Python
+        application. If there is no such function, local storage modifications will not trigger
+        anything.<br/>
+
+        The signature of the *on_local_storage_change* callback function must be:
+
+        - *state*: the `State^` instance of the caller.
+        - *key*: the key of the local storage item that was modified.
+        - *value*: the new value of the local storage item.
+        """
 
         # sid from client_id
         self.__client_id_2_sid: t.Dict[str, t.Set[str]] = {}
@@ -1288,18 +1301,32 @@ class Gui:
             return
         name = message.get("name", "")
         payload = message.get("payload", None)
-        scope_metadata = self._get_data_scope_metadata()
+        scope_meta_ls = self._get_data_scope_metadata()[_DataScopes._META_LOCAL_STORAGE]
+        updated_items = {}
         if payload is None:
             return
         if name == "init":
-            scope_metadata[_DataScopes._META_LOCAL_STORAGE] = payload
+            for key, value in payload.items():
+                if value is not None and scope_meta_ls.get(key) != value:
+                    scope_meta_ls[key] = value
+                    updated_items[key] = value
         elif name == "update":
             key = payload.get("key", "")
             value = payload.get("value", None)
-            if value is None:
-                del scope_metadata[_DataScopes._META_LOCAL_STORAGE][key]
-            else:
-                scope_metadata[_DataScopes._META_LOCAL_STORAGE][key] = value
+            if value is None and key in scope_meta_ls:
+                del scope_meta_ls[key]
+                updated_items[key] = None
+            if value is not None and scope_meta_ls.get(key) != value:
+                scope_meta_ls[key] = value
+                updated_items[key] = value
+        # Call the on_local_storage_change function
+        if hasattr(self, "on_local_storage_change") and _is_function(self.on_local_storage_change):
+            try:
+                for key, value in updated_items.items():
+                    self._call_function_with_state(t.cast(t.Callable, self.on_local_storage_change), [key, value])
+            except Exception as e:  # pragma: no cover
+                if not self._call_on_exception("on_local_storage_change", e):
+                    _warn("Exception raised in on_local_storage_change()", e)
 
     def _get_local_storage(self):
         return self._get_data_scope_metadata()[_DataScopes._META_LOCAL_STORAGE]
@@ -2644,6 +2671,7 @@ class Gui:
             self.__bind_local_func("on_exception")
             self.__bind_local_func("on_status")
             self.__bind_local_func("on_user_content")
+            self.__bind_local_func("on_local_storage_change")
 
     def __register_blueprint(self):
         # add en empty main page if it is not defined
