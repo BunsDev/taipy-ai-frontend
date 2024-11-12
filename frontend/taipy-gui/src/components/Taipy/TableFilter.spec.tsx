@@ -67,7 +67,7 @@ describe("Table Filter Component", () => {
         const elt = getByTestId("FilterListIcon");
         await userEvent.click(elt);
         expect(getAllByText("Column")).toHaveLength(2);
-        expect(getAllByText("Action")).toHaveLength(2);
+        expect(getAllByText("Condition")).toHaveLength(2);
         expect(getAllByText("Empty String")).toHaveLength(2);
         const dropdownElts = getAllByTestId("ArrowDropDownIcon");
         expect(dropdownElts).toHaveLength(2);
@@ -104,7 +104,7 @@ describe("Table Filter Component", () => {
         await userEvent.click(getByText("NumberCol"));
         await userEvent.click(dropdownElts[1].parentElement?.firstElementChild || dropdownElts[1]);
         await findByRole("listbox");
-        await userEvent.click(getByText("less equals"));
+        await userEvent.click(getByText("is less than or equal to"));
         const validate = getByTestId("CheckIcon").parentElement;
         expect(validate).toBeDisabled();
         const labels = getAllByText("Number");
@@ -127,7 +127,7 @@ describe("Table Filter Component", () => {
         await userEvent.click(getByText("BoolCol"));
         await userEvent.click(dropdownElts[1].parentElement?.firstElementChild || dropdownElts[1]);
         await findByRole("listbox");
-        await userEvent.click(getByText("equals"));
+        await userEvent.click(getByText("is"));
         const validate = getByTestId("CheckIcon").parentElement;
         expect(validate).toBeDisabled();
         const dddElts = getAllByTestId("ArrowDropDownIcon");
@@ -151,7 +151,7 @@ describe("Table Filter Component", () => {
         await userEvent.click(getByText("DateCol"));
         await userEvent.click(dropdownElts[1].parentElement?.firstElementChild || dropdownElts[1]);
         await findByRole("listbox");
-        await userEvent.click(getByText("before equal"));
+        await userEvent.click(getByText("is on or before"));
         const validate = getByTestId("CheckIcon").parentElement;
         expect(validate).toBeDisabled();
         const input = getByPlaceholderText("YYYY/MM/DD");
@@ -241,7 +241,7 @@ describe("Table Filter Component", () => {
         );
         const elt = getByTestId("FilterListIcon");
         await userEvent.click(elt);
-        const ddElts2 = getAllByTestId("ArrowDropDownIcon");
-        expect(ddElts2).toHaveLength(2);
+        const ddElements2 = getAllByTestId("ArrowDropDownIcon");
+        expect(ddElements2).toHaveLength(2);
     });
 });

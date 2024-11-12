@@ -124,6 +124,8 @@ export interface FilterDesc {
     type: string;
 }
 export interface TableFilterProps {
+    fieldHeader?: string;
+    fieldHeaderTooltip?: string;
     columns: Record<string, ColumnDesc>;
     colsOrder?: Array<string>;
     onValidate: (data: Array<FilterDesc>) => void;
@@ -139,6 +141,8 @@ export interface SortDesc {
 }
 
 export interface TableSortProps {
+    fieldHeader?: string;
+    fieldHeaderTooltip?: string;
     columns: Record<string, ColumnDesc>;
     colsOrder?: Array<string>;
     onValidate: (data: Array<SortDesc>) => void;

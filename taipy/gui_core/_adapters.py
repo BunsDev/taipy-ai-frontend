@@ -325,7 +325,7 @@ def _invoke_action(
         return False
     try:
         if col_type == "any":
-            # when a property is not found, return True only if action is not equals
+            # when a property is not found, return True only if action is "not equal"
             if not is_dn and not hasattr(ent, "properties") or not ent.properties.get(col_fn or col):
                 return action == "!="
         if op := _operators.get(action):
