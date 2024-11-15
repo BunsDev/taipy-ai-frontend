@@ -36,6 +36,7 @@ from taipy.core import (
 )
 from taipy.core import get as core_get
 from taipy.core.config import Config
+from taipy.core.data import JSONDataNode
 from taipy.core.data._file_datanode_mixin import _FileDataNodeMixin
 from taipy.core.data._tabular_datanode_mixin import _TabularDataNodeMixin
 from taipy.core.reason import ReasonCollection
@@ -187,8 +188,8 @@ class _GuiCoreScenarioNoUpdate(_TaipyBase, _DoNotUpdate):
 class _GuiCoreDatanodeAdapter(_TaipyBase):
     @staticmethod
     def _is_tabular_data(datanode: DataNode, value: t.Any):
-        return isinstance(datanode, _TabularDataNodeMixin) or isinstance(
-            value, (pd.DataFrame, pd.Series, list, tuple, dict)
+        return isinstance(datanode, _TabularDataNodeMixin) or (
+            isinstance(value, (pd.DataFrame, pd.Series, list, tuple, dict)) and not isinstance(datanode, JSONDataNode)
         )
 
     def __get_data(self, dn: DataNode):
@@ -338,7 +339,7 @@ def _invoke_action(
         return False
     try:
         if col_type == "any":
-            # when a property is not found, return True only if action is not equals
+            # when a property is not found, return True only if action is "not equal"
             if not is_dn and not hasattr(ent, "properties") or not ent.properties.get(col_fn or col):
                 return action == "!="
         if op := _operators.get(action):

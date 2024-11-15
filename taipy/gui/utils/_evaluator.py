@@ -256,6 +256,8 @@ class _Evaluator:
             # evaluate expressions
             ctx: t.Dict[str, t.Any] = {}
             ctx.update(self.__global_ctx)
+            if lambda_expr:
+                ctx.update(gui._get_locals_bind())
             # entries in var_val are not always seen (NameError) when passed as locals
             ctx.update(var_val)
             with gui._get_authorization():

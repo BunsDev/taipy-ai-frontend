@@ -36,6 +36,8 @@ import { getSuffixedClassNames } from "./utils";
 import { MatchCase } from "../icons/MatchCase";
 
 interface TableFilterProps {
+    fieldHeader?: string;
+    fieldHeaderTooltip?: string;
     columns: Record<string, ColumnDesc>;
     colsOrder?: Array<string>;
     onValidate: (data: Array<FilterDesc>) => void;
@@ -46,6 +48,8 @@ interface TableFilterProps {
 
 interface FilterRowProps {
     idx: number;
+    fieldHeader?: string;
+    fieldHeaderTooltip?: string;
     filter?: FilterDesc;
     columns: Record<string, ColumnDesc>;
     colsOrder: Array<string>;
@@ -58,23 +62,23 @@ const anchorOrigin = {
 } as PopoverOrigin;
 
 const actionsByType = {
-    string: { "==": "equals", contains: "contains", "!=": "not equals" },
+    string: { "==": "is", contains: "contains", "!=": "is not" },
     number: {
-        "<": "less",
-        "<=": "less equals",
+        "<": "is less than",
+        "<=": "is less than or equal to",
         "==": "equals",
-        "!=": "not equals",
-        ">=": "greater equals",
-        ">": "greater",
+        "!=": "does not equal",
+        ">=": "is greater than or equal to",
+        ">": "is greater than",
     },
-    boolean: { "==": "equals", "!=": "not equals" },
+    boolean: { "==": "is", "!=": "is not" },
     date: {
-        "<": "before",
-        "<=": "before equal",
-        "==": "equals",
-        "!=": "not equals",
-        ">=": "after equal",
-        ">": "after",
+        "<": "is before",
+        "<=": "is on or before",
+        "==": "is on",
+        "!=": "is not on",
+        ">=": "is on or after",
+        ">": "is after",
     },
 } as Record<string, Record<string, string>>;
 
@@ -114,22 +118,22 @@ const getFilterDesc = (
                         ? colType === "number"
                             ? parseFloat(val)
                             : colType === "boolean"
-                            ? val === "1"
-                            : colType === "date"
-                            ? getDateTime(val)
-                            : val
+                                ? val === "1"
+                                : colType === "date"
+                                    ? getDateTime(val)
+                                    : val
                         : val,
                 type: colType,
                 matchCase: !!matchCase,
             } as FilterDesc;
         } catch (e) {
-            console.info("could not parse value ", val, e);
+            console.info("Could not parse value ", val, e);
         }
     }
 };
 
 const FilterRow = (props: FilterRowProps) => {
-    const { idx, setFilter, columns, colsOrder, filter } = props;
+    const { idx, fieldHeader, fieldHeaderTooltip, filter, columns, colsOrder, setFilter } = props;
 
     const [colId, setColId] = useState<string>("");
     const [action, setAction] = useState<string>("");
@@ -225,22 +229,24 @@ const FilterRow = (props: FilterRowProps) => {
         <Grid container size={12} alignItems="center">
             <Grid size={3.5}>
                 <FormControl margin="dense">
-                    <InputLabel>Column</InputLabel>
-                    <Select value={colId || ""} onChange={onColSelect} input={<OutlinedInput label="Column" />}>
-                        {colsOrder.map((col) =>
-                            columns[col].filter ? (
-                                <MenuItem key={col} value={col}>
-                                    {columns[col].title || columns[col].dfid}
-                                </MenuItem>
-                            ) : null
-                        )}
-                    </Select>
+                    <InputLabel>{fieldHeader}</InputLabel>
+                    <Tooltip title={fieldHeaderTooltip} placement="top">
+                        <Select value={colId || ""} onChange={onColSelect} input={<OutlinedInput label={fieldHeader} />}>
+                            {colsOrder.map((col) =>
+                                columns[col].filter ? (
+                                    <MenuItem key={col} value={col}>
+                                        {columns[col].title || columns[col].dfid}
+                                    </MenuItem>
+                                ) : null
+                            )}
+                        </Select>
+                    </Tooltip>
                 </FormControl>
             </Grid>
             <Grid size={3}>
                 <FormControl margin="dense">
-                    <InputLabel>Action</InputLabel>
-                    <Select value={action || ""} onChange={onActSelect} input={<OutlinedInput label="Action" />}>
+                    <InputLabel>Condition</InputLabel>
+                    <Select value={action || ""} onChange={onActSelect} input={<OutlinedInput label="Condition" />}>
                         {Object.keys(getActionsByType(colType)).map((a) => (
                             <MenuItem key={a} value={a}>
                                 {getActionsByType(colType)[a]}
@@ -304,7 +310,7 @@ const FilterRow = (props: FilterRowProps) => {
                         slotProps={{
                             input: {
                                 endAdornment: (
-                                    <Tooltip title={matchCase ? "Case sensitive" : "Case insensitive"}>
+                                    <Tooltip title={matchCase ? "Exact match" : "Ignore case"}>
                                         <IconButton onClick={toggleMatchCase} size="small">
                                             <MatchCase color={matchCase ? "primary" : "disabled"} />
                                         </IconButton>
@@ -339,7 +345,15 @@ const FilterRow = (props: FilterRowProps) => {
 };
 
 const TableFilter = (props: TableFilterProps) => {
-    const { onValidate, appliedFilters, columns, className = "", filteredCount } = props;
+    const {
+        fieldHeader = "Column",
+        fieldHeaderTooltip = "Select the column to filter",
+        columns,
+        onValidate,
+        appliedFilters,
+        className = "",
+        filteredCount
+    } = props;
 
     const [showFilter, setShowFilter] = useState(false);
     const filterRef = useRef<HTMLButtonElement | null>(null);
@@ -416,6 +430,8 @@ const TableFilter = (props: TableFilterProps) => {
                             <FilterRow
                                 key={"fd" + idx}
                                 idx={idx}
+                                fieldHeader={fieldHeader}
+                                fieldHeaderTooltip={fieldHeaderTooltip}
                                 filter={fd}
                                 columns={columns}
                                 colsOrder={colsOrder}
@@ -424,6 +440,8 @@ const TableFilter = (props: TableFilterProps) => {
                         ))}
                         <FilterRow
                             idx={-(filters.length + 1)}
+                            fieldHeader={fieldHeader}
+                            fieldHeaderTooltip={fieldHeaderTooltip}
                             columns={columns}
                             colsOrder={colsOrder}
                             setFilter={updateFilter}

@@ -68,7 +68,7 @@ describe("Table Filter Component", () => {
         const elt = getByTestId("FilterListIcon");
         await userEvent.click(elt);
         expect(getAllByText("Column")).toHaveLength(2);
-        expect(getAllByText("Action")).toHaveLength(2);
+        expect(getAllByText("Condition")).toHaveLength(2);
         expect(getAllByText("Empty String")).toHaveLength(2);
         const dropdownElements = getAllByTestId("ArrowDropDownIcon");
         expect(dropdownElements).toHaveLength(2);
@@ -105,7 +105,7 @@ describe("Table Filter Component", () => {
         await userEvent.click(getByText("NumberCol"));
         await userEvent.click(dropdownElements[1].parentElement?.firstElementChild || dropdownElements[1]);
         await findByRole("listbox");
-        await userEvent.click(getByText("less equals"));
+        await userEvent.click(getByText("is less than or equal to"));
         const validate = getByTestId("CheckIcon").parentElement;
         expect(validate).toBeDisabled();
         const labels = getAllByText("Number");
@@ -128,7 +128,7 @@ describe("Table Filter Component", () => {
         await userEvent.click(getByText("BoolCol"));
         await userEvent.click(dropdownElements[1].parentElement?.firstElementChild || dropdownElements[1]);
         await findByRole("listbox");
-        await userEvent.click(getByText("equals"));
+        await userEvent.click(getByText("is"));
         const validate = getByTestId("CheckIcon").parentElement;
         expect(validate).toBeDisabled();
         const dddElements = getAllByTestId("ArrowDropDownIcon");
@@ -152,7 +152,7 @@ describe("Table Filter Component", () => {
         await userEvent.click(getByText("DateCol"));
         await userEvent.click(dropdownElements[1].parentElement?.firstElementChild || dropdownElements[1]);
         await findByRole("listbox");
-        await userEvent.click(getByText("before equal"));
+        await userEvent.click(getByText("is on or before"));
         const validate = getByTestId("CheckIcon").parentElement;
         expect(validate).toBeDisabled();
         const input = getByPlaceholderText("YYYY/MM/DD");
@@ -263,7 +263,7 @@ describe("Table Filter Component - Case Insensitive Test", () => {
         await userEvent.click(getByText("StringCol"));
 
         // Check for the case-sensitive toggle and interact with it
-        const caseButton = getByRole("button", { name: /case insensitive/i });
+        const caseButton = getByRole("button", { name: /ignore case/i });
         expect(caseButton).toBeInTheDocument(); // Ensure the button is rendered
         await userEvent.click(caseButton); // change case sensitivity
     });

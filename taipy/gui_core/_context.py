@@ -52,6 +52,7 @@ from taipy.core import delete as core_delete
 from taipy.core import get as core_get
 from taipy.core import submit as core_submit
 from taipy.core.data._file_datanode_mixin import _FileDataNodeMixin
+from taipy.core.data.data_node_id import EDIT_COMMENT_KEY, EDIT_EDITOR_ID_KEY, EDIT_JOB_ID_KEY, EDIT_TIMESTAMP_KEY
 from taipy.core.notification import CoreEventConsumerBase, EventEntityType
 from taipy.core.notification.event import Event, EventOperation
 from taipy.core.notification.notifier import Notifier
@@ -993,7 +994,7 @@ class _GuiCoreContext(CoreEventConsumerBase):
         if id and (dn := core_get(id)) and isinstance(dn, DataNode):
             res = []
             for e in dn.edits:
-                job_id = e.get("job_id")
+                job_id = e.get(EDIT_JOB_ID_KEY)
                 job: t.Optional[Job] = None
                 if job_id:
                     if not (reason := is_readable(job_id)):
@@ -1002,11 +1003,11 @@ class _GuiCoreContext(CoreEventConsumerBase):
                         job = core_get(job_id)
                 res.append(
                     (
-                        e.get("timestamp"),
-                        job_id if job_id else e.get("writer_identifier", ""),
+                        e.get(EDIT_TIMESTAMP_KEY),
+                        job_id if job_id else e.get(EDIT_EDITOR_ID_KEY, ""),
                         f"Execution of task {job.task.get_simple_label()}."
                         if job and job.task
-                        else e.get("comment", ""),
+                        else e.get(EDIT_COMMENT_KEY, ""),
                     )
                 )
             return sorted(res, key=lambda r: r[0], reverse=True)
