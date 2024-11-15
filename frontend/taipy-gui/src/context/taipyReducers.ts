@@ -49,7 +49,6 @@ export enum Types {
     Acknowledgement = "ACKNOWLEDGEMENT",
     Broadcast = "BROADCAST",
     LocalStorage = "LOCAL_STORAGE",
-    LocalStorageUpdate = "LOCAL_STORAGE_UPDATE",
 }
 
 /**
@@ -511,7 +510,6 @@ export const taipyReducer = (state: TaipyState, baseAction: TaipyBaseAction): Ta
             ackId = sendWsMessage(state.socket, "RU", action.name, action.payload, state.id, action.context);
             break;
         case Types.LocalStorage:
-        case Types.LocalStorageUpdate:
             ackId = sendWsMessage(state.socket, "LS", action.name, action.payload, state.id, action.context);
             break;
     }
@@ -892,15 +890,6 @@ export const createPartialAction = (name: string, create: boolean): TaipyPartial
 
 export const createLocalStorageAction = (localStorageData: Record<string, string>): TaipyAction => ({
     type: Types.LocalStorage,
-    name: "init",
+    name: "",
     payload: localStorageData,
-});
-
-export const createLocalStorageUpdateAction = (key: string, value: string | null): TaipyAction => ({
-    type: Types.LocalStorageUpdate,
-    name: "update",
-    payload: {
-        key: key,
-        value: value,
-    },
 });

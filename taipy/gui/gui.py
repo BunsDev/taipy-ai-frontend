@@ -358,19 +358,6 @@ class Gui:
         The returned HTML content can therefore use both the variables stored in the *state*
         and the parameters provided in the call to `get_user_content_url()^`.
         """
-        self.on_local_storage_change: t.Optional[t.Callable] = None
-        """The function that is called when the local storage is modified.
-
-        It defaults to the `on_local_storage_change()` global function defined in the Python
-        application. If there is no such function, local storage modifications will not trigger
-        anything.<br/>
-
-        The signature of the *on_local_storage_change* callback function must be:
-
-        - *state*: the `State^` instance of the caller.
-        - *key*: the key of the local storage item that was modified.
-        - *value*: the new value of the local storage item.
-        """
 
         # sid from client_id
         self.__client_id_2_sid: t.Dict[str, t.Set[str]] = {}
@@ -1030,17 +1017,17 @@ class Gui:
                 complete = part == total - 1
 
         # Extract upload path (when single file is selected, path="" does not change the path)
-        upload_root = os.path.abspath( self._get_config( "upload_folder", tempfile.gettempdir() ) )
-        upload_path = os.path.abspath( os.path.join( upload_root, os.path.dirname(path) ) )
-        if upload_path.startswith( upload_root ):
-            upload_path = Path( upload_path ).resolve()
-            os.makedirs( upload_path, exist_ok=True )
+        upload_root = os.path.abspath(self._get_config("upload_folder", tempfile.gettempdir()))
+        upload_path = os.path.abspath(os.path.join(upload_root, os.path.dirname(path)))
+        if upload_path.startswith(upload_root):
+            upload_path = Path(upload_path).resolve()
+            os.makedirs(upload_path, exist_ok=True)
             # Save file into upload_path directory
             file_path = _get_non_existent_file_path(upload_path, secure_filename(file.filename))
-            file.save( os.path.join( upload_path, (file_path.name + suffix) ) )
+            file.save(os.path.join(upload_path, (file_path.name + suffix)))
         else:
             _warn(f"upload files: Path {path} points outside of upload root.")
-            return("upload files: Path part points outside of upload root.", 400)
+            return ("upload files: Path part points outside of upload root.", 400)
 
         if complete:
             if part > 0:
@@ -1076,9 +1063,7 @@ class Gui:
                     if not _is_function(file_fn):
                         file_fn = _getscopeattr(self, on_upload_action)
                     if _is_function(file_fn):
-                        self._call_function_with_state(
-                            t.cast(t.Callable, file_fn), ["file_upload", {"args": [data]}]
-                        )
+                        self._call_function_with_state(t.cast(t.Callable, file_fn), ["file_upload", {"args": [data]}])
                 else:
                     setattr(self._bindings(), var_name, newvalue)
         return ("", 200)
@@ -1315,34 +1300,13 @@ class Gui:
     def __handle_ws_local_storage(self, message: t.Any):
         if not isinstance(message, dict):
             return
-        name = message.get("name", "")
         payload = message.get("payload", None)
         scope_meta_ls = self._get_data_scope_metadata()[_DataScopes._META_LOCAL_STORAGE]
-        updated_items = {}
         if payload is None:
             return
-        if name == "init":
-            for key, value in payload.items():
-                if value is not None and scope_meta_ls.get(key) != value:
-                    scope_meta_ls[key] = value
-                    updated_items[key] = value
-        elif name == "update":
-            key = payload.get("key", "")
-            value = payload.get("value", None)
-            if value is None and key in scope_meta_ls:
-                del scope_meta_ls[key]
-                updated_items[key] = None
+        for key, value in payload.items():
             if value is not None and scope_meta_ls.get(key) != value:
                 scope_meta_ls[key] = value
-                updated_items[key] = value
-        # Call the on_local_storage_change function
-        if hasattr(self, "on_local_storage_change") and _is_function(self.on_local_storage_change):
-            try:
-                for key, value in updated_items.items():
-                    self._call_function_with_state(t.cast(t.Callable, self.on_local_storage_change), [key, value])
-            except Exception as e:  # pragma: no cover
-                if not self._call_on_exception("on_local_storage_change", e):
-                    _warn("Exception raised in on_local_storage_change()", e)
 
     def _get_local_storage(self, *keys: str) -> t.Optional[t.Union[str, t.Dict[str, str]]]:
         if not keys:
@@ -2698,7 +2662,6 @@ class Gui:
             self.__bind_local_func("on_exception")
             self.__bind_local_func("on_status")
             self.__bind_local_func("on_user_content")
-            self.__bind_local_func("on_local_storage_change")
 
     def __register_blueprint(self):
         # add en empty main page if it is not defined
