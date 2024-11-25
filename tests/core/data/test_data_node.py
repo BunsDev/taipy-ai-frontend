@@ -667,7 +667,7 @@ class TestDataNode:
         data_node.path = "baz.p"
         assert data_node.path == "baz.p"
 
-    def test_track_edit(self):
+    def test_edit_edit_tracking(self):
         dn_config = Config.configure_data_node("A")
         data_node = _DataManager._bulk_get_or_create([dn_config])[dn_config]
 

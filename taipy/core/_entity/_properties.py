@@ -13,6 +13,7 @@ from collections import UserDict
 
 from taipy.common.config.common._template_handler import _TemplateHandler as _tpl
 
+from ..common._utils import _normalize_path
 from ..notification import EventOperation, Notifier, _make_event
 
 
@@ -26,6 +27,8 @@ class _Properties(UserDict):
         self._pending_deletions = set()
 
     def __setitem__(self, key, value):
+        if key == "path":
+            value = _normalize_path(value)
         super(_Properties, self).__setitem__(key, value)
 
         if hasattr(self, "_entity_owner"):
