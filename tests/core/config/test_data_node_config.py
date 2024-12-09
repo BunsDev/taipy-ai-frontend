@@ -405,3 +405,8 @@ def test_clean_config():
     assert dn1_config.validity_period is dn2_config.validity_period is None
     assert dn1_config.default_path is dn2_config.default_path is None
     assert dn1_config.properties == dn2_config.properties == {}
+
+
+def test_normalize_path():
+    data_node_config = Config.configure_data_node(id="data_nodes1", storage_type="csv", path=r"data\file.csv")
+    assert data_node_config.path == "data/file.csv"

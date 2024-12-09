@@ -12,6 +12,7 @@
 import dataclasses
 import os
 import pathlib
+import re
 import uuid
 from datetime import datetime, timedelta
 from time import sleep
@@ -25,6 +26,7 @@ from pandas.testing import assert_frame_equal
 from taipy.common.config import Config
 from taipy.common.config.common.scope import Scope
 from taipy.common.config.exceptions.exceptions import InvalidConfigurationId
+from taipy.core.common._utils import _normalize_path
 from taipy.core.data._data_manager import _DataManager
 from taipy.core.data._data_manager_factory import _DataManagerFactory
 from taipy.core.data.csv import CSVDataNode
@@ -129,7 +131,7 @@ class TestCSVDataNode:
     )
     def test_create_with_default_data(self, properties, exists):
         dn = CSVDataNode("foo", Scope.SCENARIO, DataNodeId(f"dn_id_{uuid.uuid4()}"), properties=properties)
-        assert dn.path == os.path.join(Config.core.storage_folder.strip("/"), "csvs", dn.id + ".csv")
+        assert dn.path == f"{Config.core.storage_folder}csvs/{dn.id}.csv"
         assert os.path.exists(dn.path) is exists
 
     def test_set_path(self):
@@ -208,7 +210,7 @@ class TestCSVDataNode:
         reasons = dn.is_downloadable()
         assert not reasons
         assert len(reasons._reasons) == 1
-        assert str(NoFileToDownload(path, dn.id)) in reasons.reasons
+        assert str(NoFileToDownload(_normalize_path(path), dn.id)) in reasons.reasons
 
     def test_is_not_downloadable_not_a_file(self):
         path = os.path.join(pathlib.Path(__file__).parent.resolve(), "data_sample")
@@ -216,12 +218,12 @@ class TestCSVDataNode:
         reasons = dn.is_downloadable()
         assert not reasons
         assert len(reasons._reasons) == 1
-        assert str(NotAFile(path, dn.id)) in reasons.reasons
+        assert str(NotAFile(_normalize_path(path), dn.id)) in reasons.reasons
 
     def test_get_downloadable_path(self):
         path = os.path.join(pathlib.Path(__file__).parent.resolve(), "data_sample/example.csv")
         dn = CSVDataNode("foo", Scope.SCENARIO, properties={"path": path, "exposed_type": "pandas"})
-        assert dn._get_downloadable_path() == path
+        assert re.split(r"[\\/]", dn._get_downloadable_path()) == re.split(r"[\\/]", path)
 
     def test_get_downloadable_path_with_not_existing_file(self):
         dn = CSVDataNode("foo", Scope.SCENARIO, properties={"path": "NOT_EXISTING.csv", "exposed_type": "pandas"})
@@ -247,7 +249,7 @@ class TestCSVDataNode:
 
         assert_frame_equal(dn.read(), upload_content)  # The content of the dn should change to the uploaded content
         assert dn.last_edit_date > old_last_edit_date
-        assert dn.path == old_csv_path  # The path of the dn should not change
+        assert dn.path == _normalize_path(old_csv_path)  # The path of the dn should not change
 
     def test_upload_with_upload_check_with_exception(self, csv_file, tmpdir_factory, caplog):
         old_csv_path = tmpdir_factory.mktemp("data").join("df.csv").strpath
@@ -304,7 +306,7 @@ class TestCSVDataNode:
 
         assert_frame_equal(dn.read(), old_data)  # The content of the dn should not change when upload fails
         assert dn.last_edit_date == old_last_edit_date  # The last edit date should not change when upload fails
-        assert dn.path == old_csv_path  # The path of the dn should not change
+        assert dn.path == _normalize_path(old_csv_path)  # The path of the dn should not change
 
         # The upload should succeed when check_data_column() return True
         assert dn._upload(csv_file, upload_checker=check_data_column)
@@ -354,7 +356,7 @@ class TestCSVDataNode:
 
         np.array_equal(dn.read(), old_data)  # The content of the dn should not change when upload fails
         assert dn.last_edit_date == old_last_edit_date  # The last edit date should not change when upload fails
-        assert dn.path == old_csv_path  # The path of the dn should not change
+        assert dn.path == _normalize_path(old_csv_path)  # The path of the dn should not change
 
         # The upload should succeed when check_data_is_positive() return True
         assert dn._upload(new_csv_path, upload_checker=check_data_is_positive)
