@@ -4,7 +4,11 @@ runs:
   steps:
     - name: install kernel
       shell: bash
-      run: pipenv run ipython kernel install --name "python3" --user
+      run: |
+        pipenv run python --version
+        pipenv run pip freeze | grep "ipython\|ipykernel"
+        pipenv run ipython kernel install --name "python3" --user
+        pipenv run jupyter kernelspec listter kernelspec list
     - name: run tests
       shell: bash
       run: pipenv run pytest -m "teste2e" tests/gui
