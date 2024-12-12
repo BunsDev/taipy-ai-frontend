@@ -8,7 +8,7 @@ runs:
         pipenv run python --version
         pipenv run pip freeze | grep "ipython\|ipykernel"
         pipenv run ipython kernel install --name "python3" --user
-        pipenv run jupyter kernelspec listter kernelspec list
+        pipenv run jupyter kernelspec list
     - name: run tests
       shell: bash
       run: pipenv run pytest -m "teste2e" tests/gui
