@@ -65,7 +65,7 @@ class _TaskFunctionWrapper:
                 for res, dn in zip(_results, outputs):
                     try:
                         data_node = data_manager._get(dn.id)
-                        data_node.write(res, job_id=job_id)
+                        data_node._write(res)
                     except Exception as e:
                         logger.error("Error during write", exc_info=1)
                         exceptions.append(DataNodeWritingError(f"Error writing in datanode id {dn.id}: {e}"))
