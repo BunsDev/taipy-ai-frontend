@@ -23,26 +23,6 @@ from ..data_node_config import DataNodeConfig
 
 
 class _DataNodeConfigChecker(_ConfigChecker):
-    _PROPERTIES_TYPES: Dict[str, List[Tuple[Any, List[str]]]] = {
-        DataNodeConfig._STORAGE_TYPE_VALUE_GENERIC: [
-            (
-                Callable,
-                [
-                    DataNodeConfig._OPTIONAL_READ_FUNCTION_GENERIC_PROPERTY,
-                    DataNodeConfig._OPTIONAL_WRITE_FUNCTION_GENERIC_PROPERTY,
-                ],
-            )
-        ],
-        DataNodeConfig._STORAGE_TYPE_VALUE_SQL: [
-            (
-                Callable,
-                [
-                    DataNodeConfig._REQUIRED_WRITE_QUERY_BUILDER_SQL_PROPERTY,
-                    DataNodeConfig._OPTIONAL_APPEND_QUERY_BUILDER_SQL_PROPERTY,
-                ],
-            ),
-        ],
-    }
 
     def __init__(self, config: _Config, collector: IssueCollector):
         super().__init__(config, collector)
@@ -67,7 +47,7 @@ class _DataNodeConfigChecker(_ConfigChecker):
             self._check_scope(data_node_config_id, data_node_config)
             self._check_validity_period(data_node_config_id, data_node_config)
             self._check_required_properties(data_node_config_id, data_node_config)
-            self._check_class_type(data_node_config_id, data_node_config)
+            self._check_property_types(data_node_config_id, data_node_config)
             self._check_generic_read_write_fct_and_args(data_node_config_id, data_node_config)
             self._check_exposed_type(data_node_config_id, data_node_config)
         return self._collector
@@ -217,25 +197,24 @@ class _DataNodeConfigChecker(_ConfigChecker):
                     f"DataNodeConfig `{data_node_config_id}` must be populated with a Callable function.",
                 )
 
-    def _check_class_type(self, data_node_config_id: str, data_node_config: DataNodeConfig):
-        if data_node_config.storage_type in self._PROPERTIES_TYPES.keys():
-            for class_type, prop_keys in self._PROPERTIES_TYPES[data_node_config.storage_type]:
-                for prop_key in prop_keys:
-                    prop_value = data_node_config.properties.get(prop_key) if data_node_config.properties else None
-                    if prop_value and not isinstance(prop_value, class_type):
-                        self._error(
-                            prop_key,
-                            prop_value,
-                            f"`{prop_key}` of DataNodeConfig `{data_node_config_id}` must be"
-                            f" populated with a {'Callable' if class_type == Callable else class_type.__name__}.",
-                        )
-                    if class_type == Callable and callable(prop_value) and prop_value.__name__ == "<lambda>":
-                        self._error(
-                            prop_key,
-                            prop_value,
-                            f"`{prop_key}` of DataNodeConfig `{data_node_config_id}` must be"
-                            f" populated with a serializable Callable function but not a lambda.",
-                        )
+    def _check_property_types(self, data_node_config_id: str, data_node_config: DataNodeConfig):
+        if property_types := data_node_config._PROPERTIES_TYPES.get(data_node_config.storage_type):
+            for prop_key, prop_type in property_types.items():
+                prop_value = data_node_config.properties.get(prop_key) if data_node_config.properties else None
+                if prop_value and not isinstance(prop_value, prop_type):
+                    self._error(
+                        prop_key,
+                        prop_value,
+                        f"`{prop_key}` of DataNodeConfig `{data_node_config_id}` must be"
+                        f" populated with a {prop_type}.",
+                    )
+                if prop_type == Callable and callable(prop_value) and prop_value.__name__ == "<lambda>":
+                    self._error(
+                        prop_key,
+                        prop_value,
+                        f"`{prop_key}` of DataNodeConfig `{data_node_config_id}` must be"
+                        f" populated with a serializable Callable function but not a lambda.",
+                    )
 
     def _check_exposed_type(self, data_node_config_id: str, data_node_config: DataNodeConfig):
         if not isinstance(data_node_config.exposed_type, str):
