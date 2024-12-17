@@ -13,7 +13,7 @@
 
 /**************************************************************
 
-                   TAIPY SELECTOR
+                   TAIPY STATUS
 
 ***************************************************************/
 
@@ -21,21 +21,8 @@
               OVERRIDES / NORMALIZATION
 **************************************************/
 
-.taipy-selector {
-  margin: 0;
-}
-
-
-/*************************************************
-              MODIFIER CLASSES
-**************************************************/
-
-/* fullwidth : make the element fit the full width of its container */
-.taipy-selector.fullwidth{
-  display: flex;
-  max-width: initial;
-}
-
-.taipy-selector-radio-group.row-radio-group, .taipy-selector-check-group.row-check-group{
-    flex-direction: row;
+.taipy-status {
+    display: inline-flex;
+    min-height: 48px;
+    padding-top: 0.5em;
 }

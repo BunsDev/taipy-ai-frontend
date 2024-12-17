@@ -51,6 +51,7 @@ const verticalDivStyle: CSSProperties = {
     flexDirection: "column",
     gap: 0,
 };
+const noPaddingYSx = {py: 0};
 
 const Input = (props: TaipyInputProps) => {
     const {
@@ -264,32 +265,36 @@ const Input = (props: TaipyInputProps) => {
         () =>
             type == "number"
                 ? {
-                      htmlInput: {
-                          step: step ? step : 1,
-                          min: min,
-                          max: max,
-                      },
-                      input: {
-                          endAdornment: (
-                              <div style={verticalDivStyle}>
-                                  <IconButton
-                                      aria-label="Increment value"
-                                      size="small"
-                                      onMouseDown={handleUpStepperMouseDown}
-                                  >
-                                      <ArrowDropUpIcon fontSize="inherit" />
-                                  </IconButton>
-                                  <IconButton
-                                      aria-label="Decrement value"
-                                      size="small"
-                                      onMouseDown={handleDownStepperMouseDown}
-                                  >
-                                      <ArrowDropDownIcon fontSize="inherit" />
-                                  </IconButton>
-                              </div>
-                          ),
-                      },
-                  }
+                    htmlInput: {
+                        step: step ? step : 1,
+                        min: min,
+                        max: max,
+                    },
+                    input: {
+                        endAdornment: (
+                            <div style={verticalDivStyle}>
+                                <IconButton
+                                    aria-label="Increment value"
+                                    size="small"
+                                    onMouseDown={handleUpStepperMouseDown}
+                                    disabled={!active}
+                                    sx={noPaddingYSx}
+                                >
+                                    <ArrowDropUpIcon fontSize="inherit" />
+                                </IconButton>
+                                <IconButton
+                                    aria-label="Decrement value"
+                                    size="small"
+                                    onMouseDown={handleDownStepperMouseDown}
+                                    disabled={!active}
+                                    sx={noPaddingYSx}
+                                >
+                                    <ArrowDropDownIcon fontSize="inherit" />
+                                </IconButton>
+                            </div>
+                        ),
+                    },
+                }
                 : type == "password"
                 ? {
                       htmlInput: { autoComplete: "current-password" },
@@ -308,6 +313,7 @@ const Input = (props: TaipyInputProps) => {
                   }
                 : undefined,
         [
+            active,
             type,
             step,
             min,

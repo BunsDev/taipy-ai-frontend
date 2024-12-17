@@ -21,6 +21,7 @@ import React, {
     useEffect,
     ReactNode,
     lazy,
+    UIEvent,
 } from "react";
 import { SxProps, Theme, darken, lighten } from "@mui/material/styles";
 import Avatar from "@mui/material/Avatar";
@@ -226,6 +227,7 @@ const Chat = (props: ChatProps) => {
     const isAnchorDivVisible = useElementVisible(anchorDivRef);
     const [showMessage, setShowMessage] = useState(false);
     const [anchorPopup, setAnchorPopup] = useState<HTMLDivElement | null>(null);
+    const userScrolled = useRef(false);
 
     const className = useClassNames(props.libClassName, props.dynamicClassName, props.className);
     const active = useDynamicProperty(props.active, props.defaultActive, true);
@@ -341,7 +343,7 @@ const Chat = (props: ChatProps) => {
     );
 
     const showBottom = useCallback(() => {
-        anchorDivRef.current?.scrollIntoView();
+        anchorDivRef.current?.scrollIntoView && anchorDivRef.current?.scrollIntoView();
         setShowMessage(false);
     }, []);
 
@@ -367,8 +369,9 @@ const Chat = (props: ChatProps) => {
                 }
             }
             page.current.key = getChatKey(0, pageSize);
+            !userScrolled.current && showBottom();
         }
-    }, [refresh, pageSize, props.messages]);
+    }, [refresh, pageSize, props.messages, showBottom]);
 
     useEffect(() => {
         if (showMessage && !isAnchorDivVisible) {
@@ -399,10 +402,14 @@ const Chat = (props: ChatProps) => {
         [loadMoreItems]
     );
 
+    const handleOnScroll = useCallback((evt: UIEvent) => {
+        userScrolled.current = (evt.target as HTMLDivElement).scrollHeight - (evt.target as HTMLDivElement).offsetHeight - (evt.target as HTMLDivElement).scrollTop > 1;
+    }, []);
+
     return (
         <Tooltip title={hover || ""}>
             <Paper className={className} sx={boxSx} id={id}>
-                <Grid container rowSpacing={2} sx={gridSx} ref={scrollDivRef}>
+                <Grid container rowSpacing={2} sx={gridSx} ref={scrollDivRef} onScroll={handleOnScroll}>
                     {rows.length && !rows[0] ? (
                         <Grid className={getSuffixedClassNames(className, "-load")} size={12} sx={noAnchorSx}>
                             <Box sx={loadMoreSx}>

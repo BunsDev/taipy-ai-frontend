@@ -173,7 +173,17 @@ const Selector = (props: SelTreeProps) => {
         return sx;
     }, [height]);
     const controlSx = useMemo(
-        () => ({ my: 1, mx: 0, maxWidth: width, display: "flex", "& .MuiFormControl-root": { maxWidth: "unset" } }),
+        () => ({
+            my: 1,
+            mx: 0,
+            maxWidth: width,
+            display: "flex",
+            "& .MuiFormControl-root": {
+                maxWidth: "unset",
+                my: 0,
+                "& .MuiInputBase-root": { minHeight: 48, "& input": { minHeight: "unset" } },
+            },
+        }),
         [width]
     );
 

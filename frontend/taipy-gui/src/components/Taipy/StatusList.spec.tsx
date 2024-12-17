@@ -37,7 +37,7 @@ describe("StatusList Component", () => {
     it("uses the class", async () => {
         const { getByText } = render(<StatusList value={statuses} className="taipy-status" />);
         const elt = getByText("4 statuses");
-        expect(elt.parentElement).toHaveClass("taipy-status");
+        expect(elt.parentElement?.parentElement).toHaveClass("taipy-status");
     });
     it("can be opened when more than 1 status", async () => {
         const { getByTestId } = render(<StatusList value={statuses} />);
@@ -57,8 +57,8 @@ describe("StatusList Component", () => {
         const { getByTestId, getByText } = render(<StatusList value={statuses} />);
         const elt = getByTestId("ArrowDownwardIcon");
         await userEvent.click(elt);
-        const selt = getByText("info");
-        expect(selt.parentElement?.parentElement?.childElementCount).toBe(4);
+        const infoElt = getByText("info");
+        expect(infoElt.parentElement?.parentElement?.childElementCount).toBe(4);
     });
     it("hide closed statuses", async () => {
         const { getByTestId, queryAllByTestId } = render(<StatusList value={statuses} />);

@@ -1,6 +1,6 @@
 {
   "name": "taipy-gui-core",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "private": true,
   "devDependencies": {
     "@types/react": "^18.0.15",

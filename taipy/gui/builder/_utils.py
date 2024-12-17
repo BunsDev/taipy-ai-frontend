@@ -39,10 +39,11 @@ class _TransformVarToValue(ast.NodeTransformer):
         if var_parts[0] in self.non_vars:
             return node
         value = _get_value_in_frame(self.frame, var_parts[0])
-        if callable(value):
-            return node
         if len(var_parts) > 1:
             value = attrgetter(var_parts[1])(value)
+        if not isinstance(value, (str, int, float, bool, list, tuple)):
+            # transform into constants only what can be (ie not callable or generator for example)
+            return node
         return ast.Constant(value=value, kind=None)
 
 

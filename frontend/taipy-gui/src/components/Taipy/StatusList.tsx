@@ -12,6 +12,7 @@
  */
 
 import React, { MouseEvent, useCallback, useEffect, useMemo, useState } from "react";
+import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import ArrowDownward from "@mui/icons-material/ArrowDownward";
 import ArrowUpward from "@mui/icons-material/ArrowUpward";
@@ -19,7 +20,7 @@ import Tooltip from "@mui/material/Tooltip";
 import Popover, { PopoverOrigin } from "@mui/material/Popover";
 
 import Status, { StatusType } from "./Status";
-import { TaipyBaseProps, TaipyHoverProps } from "./utils";
+import { getSuffixedClassNames, TaipyBaseProps, TaipyHoverProps } from "./utils";
 import { useClassNames, useDynamicProperty } from "../../utils/hooks";
 
 export const getStatusIntValue = (status: string) => {
@@ -157,8 +158,13 @@ const StatusList = (props: StatusListProps) => {
 
     return (
         <Tooltip title={hover || ""}>
-            <>
-                <Status id={props.id} value={getGlobalStatus(values)} className={className} {...globalProps} />
+            <Box className={className}>
+                <Status
+                    id={props.id}
+                    value={getGlobalStatus(values)}
+                    className={getSuffixedClassNames(className, "-main")}
+                    {...globalProps}
+                />
                 <Popover open={opened} anchorEl={anchorEl} onClose={onOpen} anchorOrigin={ORIGIN}>
                     <Stack direction="column" spacing={1}>
                         {values
@@ -170,14 +176,14 @@ const StatusList = (props: StatusListProps) => {
                                         key={getId(props.id, idx)}
                                         id={getId(props.id, idx)}
                                         value={val}
-                                        className={className}
+                                        className={getSuffixedClassNames(className, `-${idx}`)}
                                         {...closeProp}
                                     />
                                 );
                             })}
                     </Stack>
                 </Popover>
-            </>
+            </Box>
         </Tooltip>
     );
 };

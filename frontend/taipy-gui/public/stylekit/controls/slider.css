@@ -22,5 +22,8 @@
 **************************************************/
 
 .taipy-slider {
+    display: inline-flex;
     max-width: 100%;
+    min-height: 48px;
+    align-items: center;
 }
