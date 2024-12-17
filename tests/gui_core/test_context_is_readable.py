@@ -25,10 +25,11 @@ from taipy.core.data.pickle import PickleDataNode
 from taipy.core.job._job_manager_factory import _JobManagerFactory
 from taipy.core.scenario._scenario_manager_factory import _ScenarioManagerFactory
 from taipy.core.submission._submission_manager_factory import _SubmissionManagerFactory
-from taipy.core.submission.submission import Submission, SubmissionStatus
+from taipy.core.submission.submission import Submission
 from taipy.core.task._task_manager_factory import _TaskManagerFactory
 from taipy.gui import Gui
 from taipy.gui_core._context import _GuiCoreContext
+from taipy.gui_core._utils import _ClientStatus
 
 a_cycle = Cycle(Frequency.DAILY, {}, datetime.now(), datetime.now(), datetime.now(), id=CycleId("CYCLE_id"))
 a_scenario = Scenario("scenario_config_id", None, {}, sequences={"sequence": {}})
@@ -201,7 +202,7 @@ class TestGuiCoreContext_is_readable:
             def sub_cb():
                 return True
 
-            gui_core_context.client_submission[a_submission.id] = SubmissionStatus.UNDEFINED
+            gui_core_context.client_submission[a_submission.id] = _ClientStatus("client_id", None)
             gui_core_context.submission_status_callback(a_submission.id)
             mockget.assert_called()
             found = False
