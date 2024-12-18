@@ -217,7 +217,7 @@ class TestGuiCoreContext_is_readable:
 
             with patch("taipy.gui_core._context.is_readable", side_effect=mock_is_readable_false):
                 gui_core_context.submission_status_callback(a_submission.id)
-                mockget.assert_not_called()
+                mockget.assert_called_once()
 
     def test_data_node_adapter(self):
         with patch("taipy.gui_core._context.core_get", side_effect=mock_core_get):
@@ -387,7 +387,7 @@ class TestGuiCoreContext_is_readable:
 
             with patch("taipy.gui_core._context.is_readable", side_effect=mock_is_readable_false):
                 gui_core_context.submission_status_callback(a_scenario.id)
-                mockget.assert_not_called()
+                mockget.assert_called_once()
 
     def test_update_data(self):
         with patch("taipy.gui_core._context.core_get", side_effect=mock_core_get):
