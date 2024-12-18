@@ -1335,14 +1335,14 @@
                     {
                         "name": "width",
                         "type": "Union[str,number]",
-                        "default_value": "None",
-                        "doc": "The width of the metric control, in CSS units."
+                        "default_value": "\"20vw\"",
+                        "doc": "The width of the metric control, in CSS units"
                     },
                     {
                         "name": "height",
                         "type": "Union[str,number]",
-                        "default_value": "None",
-                        "doc": "The height of the metric control, in CSS units."
+                        "default_value": "\"20vh\"",
+                        "doc": "The height of the metric control, in CSS units"
                     },
                     {
                         "name": "layout",
