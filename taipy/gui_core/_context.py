@@ -166,67 +166,64 @@ class _GuiCoreContext(CoreEventConsumerBase):
         if not submission_id:
             return
         submission = None
-        new_status = None
+        new_status: t.Optional[SubmissionStatus] = None
         payload: t.Optional[t.Dict[str, t.Any]] = None
         client_id: t.Optional[str] = None
+        submission_name: t.Optional[str] = None
         try:
-            last_client_status = self.client_submission.get(submission_id)
-            if not last_client_status:
+            submission = t.cast(Submission, core_get(submission_id))
+            if not submission or not submission.entity_id:
                 return
+            new_status = submission.submission_status
 
-            client_id = last_client_status.client_id
-
-            with self.gui._get_authorization(client_id):
-                if not is_readable(t.cast(SubmissionId, submission_id)):
-                    return
-                submission = t.cast(Submission, core_get(submission_id))
-                if not submission or not submission.entity_id:
+            with self.submissions_lock:
+                last_client_status = self.client_submission.get(submission_id)
+                if not last_client_status:
                     return
 
                 payload = {}
-                new_status = t.cast(SubmissionStatus, submission.submission_status)
+                if last_client_status.submission_status is not new_status:
+                    # callback
+                    submission_name = submission.properties.get("on_submission")
 
-                if client_id:
-                    running_tasks = {}
-                    # with self.gui._get_authorization(client_id):
-                    for job in submission.jobs:
-                        job = job if isinstance(job, Job) else t.cast(Job, core_get(job))
-                        running_tasks[job.task.id] = (
-                            SubmissionStatus.RUNNING.value
-                            if job.is_running()
-                            else SubmissionStatus.PENDING.value
-                            if job.is_pending()
-                            else None
-                        )
-                    payload.update(tasks=running_tasks)
-
-                    if last_client_status.submission_status is not new_status:
-                        # callback
-                        submission_name = submission.properties.get("on_submission")
-                        if submission_name:
-                            self.gui.invoke_callback(
-                                client_id,
-                                submission_name,
-                                [
-                                    core_get(submission.id),
-                                    {
-                                        "submission_status": new_status.name,
-                                        "submittable_entity": core_get(submission.entity_id),
-                                        **(event.metadata if event else {}),
-                                    },
-                                ],
-                                submission.properties.get("module_context"),
-                            )
-
-            if new_status in (
-                SubmissionStatus.COMPLETED,
-                SubmissionStatus.FAILED,
-                SubmissionStatus.CANCELED,
-            ):
-                with self.submissions_lock:
+                if new_status in (
+                    SubmissionStatus.COMPLETED,
+                    SubmissionStatus.FAILED,
+                    SubmissionStatus.CANCELED,
+                ):
                     self.client_submission.pop(submission_id, None)
-            else:
-                last_client_status.submission_status = new_status
+                else:
+                    last_client_status.submission_status = new_status
+
+            if client_id:= submission.properties.get("client_id"):
+                with self.gui._get_authorization(client_id):
+                    if payload is not None:
+                        running_tasks = {}
+                        for job in submission.jobs:
+                            job = job if isinstance(job, Job) else t.cast(Job, core_get(job))
+                            running_tasks[job.task.id] = (
+                                SubmissionStatus.RUNNING.value
+                                if job.is_running()
+                                else SubmissionStatus.PENDING.value
+                                if job.is_pending()
+                                else None
+                            )
+                        payload.update(tasks=running_tasks)
+
+                    if submission_name:
+                        self.gui.invoke_callback(
+                            client_id,
+                            submission_name,
+                            [
+                                core_get(submission.id),
+                                {
+                                    "submission_status": new_status.name if new_status else "None",
+                                    "submittable_entity": core_get(submission.entity_id),
+                                    **(event.metadata if event else {}),
+                                },
+                            ],
+                            submission.properties.get("module_context"),
+                        )
 
         except Exception as e:
             _warn(f"Submission ({submission_id}) is not available", e)

@@ -20,6 +20,9 @@
 /*************************************************
               MODIFIER CLASSES
 **************************************************/
+.taipy-file-selector .MuiButtonBase-root {
+    margin: 4px 0;
+}
 
 /* fullwidth :  */
 .taipy-file-selector.fullwidth [role='button'] {
