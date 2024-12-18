@@ -59,7 +59,11 @@ jobs:
         run: pip install pipenv --upgrade
 
       - name: Install Dependencies
-        run: pipenv install --dev --python=${{ matrix.python-version }}
+        run: |
+          echo "EXEC: pipenv lock"
+          pipenv lock
+          echo "EXEC pipenv install --dev"
+          pipenv install --dev --python=${{ matrix.python-version }}
 
       - name: Setup LibMagic (MacOS)
         if: matrix.os == 'macos-13'

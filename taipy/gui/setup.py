@@ -45,7 +45,7 @@ extras_require = {
         "python-magic>=0.4.24,<0.5;platform_system!='Windows'",
         "python-magic-bin>=0.4.14,<0.5;platform_system=='Windows'",
     ],
-    "arrow": ["pyarrow>=17.0.0,<18.0"],
+    "arrow": ["pyarrow>=16.0.0,<19.0"],
 }
 
 def _build_webapp():
