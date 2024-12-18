@@ -36,6 +36,9 @@
 /*************************************************
               MODIFIER CLASSES
 **************************************************/
+.taipy-toggle {
+    margin: 4px 0;
+}
 
 /* relative : Reset the theme toggle position to fit page flow */
 .taipy-toggle.relative {

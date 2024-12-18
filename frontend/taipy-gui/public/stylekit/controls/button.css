@@ -21,6 +21,10 @@
               MODIFIER CLASSES
 **************************************************/
 
+.taipy-button {
+    margin: 4px 0;
+}
+
 /* fullwidth :  */
 .taipy-button.fullwidth {
     display: flex;

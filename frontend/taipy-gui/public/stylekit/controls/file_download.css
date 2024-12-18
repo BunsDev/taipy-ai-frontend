@@ -20,6 +20,9 @@
 /*************************************************
               MODIFIER CLASSES
 **************************************************/
+.taipy-file-download>button {
+    margin: 4px 0;
+}
 
 /* fullwidth :  */
 .taipy-file-download.fullwidth button {
