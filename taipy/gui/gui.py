@@ -1557,7 +1557,7 @@ class Gui:
     def invoke_callback(
         self,
         state_id: str,
-        callback: t.Callable,
+        callback: t.Union[t.Callable, str],
         args: t.Optional[t.Sequence[t.Any]] = None,
         module_context: t.Optional[str] = None,
     ) -> t.Any:
