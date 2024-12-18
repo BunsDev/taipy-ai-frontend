@@ -33,7 +33,6 @@ from taipy.core import (
     Sequence,
     SequenceId,
     Submission,
-    SubmissionId,
     can_create,
     cancel_job,
     create_scenario,
