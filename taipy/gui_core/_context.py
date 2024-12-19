@@ -33,7 +33,6 @@ from taipy.core import (
     Sequence,
     SequenceId,
     Submission,
-    SubmissionId,
     cancel_job,
     create_scenario,
     delete_job,
@@ -155,7 +154,7 @@ class _GuiCoreContext(CoreEventConsumerBase):
         self.broadcast_core_changed({"scenario": scenario_id or True})
 
     def submission_status_callback(self, submission_id: t.Optional[str] = None, event: t.Optional[Event] = None):
-        if not submission_id or not is_readable(t.cast(SubmissionId, submission_id)):
+        if not submission_id:
             return
         submission = None
         new_status: t.Optional[SubmissionStatus] = None

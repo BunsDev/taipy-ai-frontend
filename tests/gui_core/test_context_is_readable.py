@@ -213,10 +213,6 @@ class TestGuiCoreContext_is_readable:
             assert found is True
             mockget.reset_mock()
 
-            with patch("taipy.gui_core._context.is_readable", side_effect=mock_is_readable_false):
-                gui_core_context.submission_status_callback(a_submission.id)
-                mockget.assert_not_called()
-
     def test_data_node_adapter(self):
         with patch("taipy.gui_core._context.core_get", side_effect=mock_core_get):
             gui_core_context = _GuiCoreContext(Mock())
@@ -384,7 +380,7 @@ class TestGuiCoreContext_is_readable:
             mockget.reset_mock()
 
             with patch("taipy.gui_core._context.is_readable", side_effect=mock_is_readable_false):
-                gui_core_context.submission_status_callback(a_scenario.id)
+                gui_core_context.get_scenarios_for_owner(a_scenario.id)
                 mockget.assert_not_called()
 
     def test_update_data(self):
