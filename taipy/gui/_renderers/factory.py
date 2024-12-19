@@ -585,6 +585,7 @@ class _Factory:
                 ("size",),
                 ("downloadable", PropertyType.boolean),
                 ("use_checkbox", PropertyType.boolean),
+                ("sortable", PropertyType.boolean, True),
             ]
         )
         ._set_propagate()

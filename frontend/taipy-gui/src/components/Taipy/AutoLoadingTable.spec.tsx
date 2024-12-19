@@ -98,6 +98,7 @@ const tableValue = {
     },
 };
 const tableColumns = JSON.stringify({ Entity: { dfid: "Entity" } });
+const tableWidthColumns = JSON.stringify({ Entity: { dfid: "Entity", width: "100px" }, Country: {dfid: "Country"} });
 
 describe("AutoLoadingTable Component", () => {
     it("renders", async () => {
@@ -131,6 +132,16 @@ describe("AutoLoadingTable Component", () => {
     it("hides sort icons when not active", async () => {
         const { queryByTestId } = render(<AutoLoadingTable data={undefined} defaultColumns={tableColumns} active={false} />);
         expect(queryByTestId("ArrowDownwardIcon")).toBeNull();
+    });
+    it("hides sort icons when not sortable", async () => {
+        const { queryByTestId } = render(<AutoLoadingTable data={undefined} defaultColumns={tableColumns} sortable={false} />);
+        expect(queryByTestId("ArrowDownwardIcon")).toBeNull();
+    });
+    it("set width if requested", async () => {
+        const { getByText } = render(<AutoLoadingTable data={undefined} defaultColumns={tableWidthColumns} />);
+        const header = getByText("Entity").closest("tr");
+        expect(header?.firstChild).toHaveStyle({"min-width": "100px"});
+        expect(header?.lastChild).toHaveStyle({"width": "100%"});
     });
     // keep getting undefined Error from jest, it seems to be linked to the setTimeout that makes the code run after the end of the test :-(
     // https://github.com/facebook/jest/issues/12262

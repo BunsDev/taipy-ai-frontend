@@ -94,6 +94,10 @@ const tableColumns = JSON.stringify({
     Entity: { dfid: "Entity" },
     "Daily hospital occupancy": { dfid: "Daily hospital occupancy", type: "int64" },
 });
+const tableWidthColumns = JSON.stringify({
+    Entity: { dfid: "Entity", width: "100px" },
+    "Daily hospital occupancy": { dfid: "Daily hospital occupancy", type: "int64" },
+});
 const changedValue = {
     [valueKey]: {
         data: [
@@ -216,6 +220,18 @@ describe("PaginatedTable Component", () => {
             <PaginatedTable data={undefined} defaultColumns={tableColumns} active={false} />
         );
         expect(queryByTestId("ArrowDownwardIcon")).toBeNull();
+    });
+    it("Hides sort icons when not sortable", async () => {
+        const { queryByTestId } = render(
+            <PaginatedTable data={undefined} defaultColumns={tableColumns} sortable={false} />
+        );
+        expect(queryByTestId("ArrowDownwardIcon")).toBeNull();
+    });
+    it("set width if requested", async () => {
+        const { getByText } = render(<PaginatedTable data={undefined} defaultColumns={tableWidthColumns} />);
+        const header = getByText("Entity").closest("tr");
+        expect(header?.firstChild).toHaveStyle({"min-width": "100px"});
+        expect(header?.lastChild).toHaveStyle({"width": "100%"});
     });
     it("dispatch 2 well formed messages at first render", async () => {
         const dispatch = jest.fn();

@@ -1076,6 +1076,12 @@
                         "type": "bool",
                         "default_value": "False",
                         "doc": "If True, boolean values are rendered as a simple HTML checkbox."
+                    },
+                    {
+                        "name": "sortable",
+                        "type": "bool",
+                        "default_value": "True",
+                        "doc": "TODO: Indicates, if False, that the table cannot be sorted. (can be overridden on a column basis by specifying notSortable key in the columns dict."
                     }
                 ]
             }

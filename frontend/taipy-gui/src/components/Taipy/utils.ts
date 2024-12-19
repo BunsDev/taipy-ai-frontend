@@ -116,14 +116,14 @@ export const noDisplayStyle = { display: "none" };
 const RE_ONLY_NUMBERS = /^\d+(\.\d*)?$/;
 export const getCssSize = (val: string | number) => {
     if (typeof val === "number") {
-        return "" + val + "px";
+        return `${val}px`;
     } else {
-        val = val.trim();
+        val = `${val}`.trim();
         if (RE_ONLY_NUMBERS.test(val)) {
-            return val + "px";
+            return `${val}px`;
         }
+        return val;
     }
-    return val;
 };
 
 /**

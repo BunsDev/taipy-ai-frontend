@@ -11,63 +11,33 @@
  * specific language governing permissions and limitations under the License.
  */
 
-import React, { useState, useEffect, useCallback, useRef, useMemo, CSSProperties, MouseEvent } from "react";
+import React, { CSSProperties, MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AddIcon from "@mui/icons-material/Add";
+import DataSaverOff from "@mui/icons-material/DataSaverOff";
+import DataSaverOn from "@mui/icons-material/DataSaverOn";
+import Download from "@mui/icons-material/Download";
 import Box from "@mui/material/Box";
+import IconButton from "@mui/material/IconButton";
+import Paper from "@mui/material/Paper";
+import Skeleton from "@mui/material/Skeleton";
 import MuiTable from "@mui/material/Table";
 import TableCell, { TableCellProps } from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import TableSortLabel from "@mui/material/TableSortLabel";
-import Paper from "@mui/material/Paper";
+import Tooltip from "@mui/material/Tooltip";
 import { visuallyHidden } from "@mui/utils";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList, ListOnItemsRenderedProps } from "react-window";
 import InfiniteLoader from "react-window-infinite-loader";
-import Skeleton from "@mui/material/Skeleton";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
-import AddIcon from "@mui/icons-material/Add";
-import DataSaverOn from "@mui/icons-material/DataSaverOn";
-import DataSaverOff from "@mui/icons-material/DataSaverOff";
-import Download from "@mui/icons-material/Download";
-import { generateHeaderClassName } from "./tableUtils";
 
 import {
     createRequestInfiniteTableUpdateAction,
     createSendActionNameAction,
     FormatConfig,
 } from "../../context/taipyReducers";
-import {
-    ColumnDesc,
-    FilterDesc,
-    getSortByIndex,
-    Order,
-    TaipyTableProps,
-    baseBoxSx,
-    paperSx,
-    tableSx,
-    RowType,
-    EditableCell,
-    OnCellValidation,
-    RowValue,
-    EDIT_COL,
-    OnRowDeletion,
-    addActionColumn,
-    headBoxSx,
-    getClassName,
-    ROW_CLASS_NAME,
-    iconInRowSx,
-    DEFAULT_SIZE,
-    OnRowSelection,
-    getRowIndex,
-    getTooltip,
-    defaultColumns,
-    OnRowClick,
-    DownloadAction,
-    getFormatFn,
-    getPageKey,
-} from "./tableUtils";
+import { emptyArray } from "../../utils";
 import {
     useClassNames,
     useDispatch,
@@ -78,9 +48,39 @@ import {
     useModule,
 } from "../../utils/hooks";
 import TableFilter from "./TableFilter";
-import { getSuffixedClassNames, getUpdateVar } from "./utils";
-import { emptyArray } from "../../utils";
+import {
+    addActionColumn,
+    baseBoxSx,
+    ColumnDesc,
+    DEFAULT_SIZE,
+    defaultColumns,
+    DownloadAction,
+    EDIT_COL,
+    EditableCell,
+    FilterDesc,
+    generateHeaderClassName,
+    getClassName,
+    getFormatFn,
+    getPageKey,
+    getRowIndex,
+    getSortByIndex,
+    getTooltip,
+    headBoxSx,
+    iconInRowSx,
+    OnCellValidation,
+    OnRowClick,
+    OnRowDeletion,
+    OnRowSelection,
+    Order,
+    paperSx,
+    ROW_CLASS_NAME,
+    RowType,
+    RowValue,
+    tableSx,
+    TaipyTableProps,
+} from "./tableUtils";
 import { getComponentClassName } from "./TaipyStyle";
+import { getCssSize, getSuffixedClassNames, getUpdateVar } from "./utils";
 
 interface RowData {
     colsOrder: string[];
@@ -203,6 +203,7 @@ const AutoLoadingTable = (props: TaipyTableProps) => {
         compare = false,
         onCompare = "",
         useCheckbox = false,
+        sortable = true,
     } = props;
     const [rows, setRows] = useState<RowType[]>([]);
     const [compRows, setCompRows] = useState<RowType[]>([]);
@@ -253,7 +254,7 @@ const AutoLoadingTable = (props: TaipyTableProps) => {
     useDispatchRequestUpdateOnFirstRender(dispatch, id, module, updateVars);
 
     const onSort = useCallback(
-        (e: React.MouseEvent<HTMLElement>) => {
+        (e: MouseEvent<HTMLElement>) => {
             const col = e.currentTarget.getAttribute("data-dfid");
             if (col) {
                 const isAsc = orderBy === col && order === "asc";
@@ -287,82 +288,107 @@ const AutoLoadingTable = (props: TaipyTableProps) => {
         e.stopPropagation();
     }, []);
 
-    const [colsOrder, columns, cellClassNames, tooltips, formats, handleNan, filter, partialEditable] = useMemo(() => {
-        let hNan = !!props.nanValue;
-        if (baseColumns) {
-            try {
-                let filter = false;
-                let partialEditable = editable;
-                const newCols: Record<string, ColumnDesc> = {};
-                Object.entries(baseColumns).forEach(([cId, cDesc]) => {
-                    const nDesc = (newCols[cId] = { ...cDesc });
-                    if (typeof nDesc.filter != "boolean") {
-                        nDesc.filter = !!props.filter;
+    const [colsOrder, columns, cellClassNames, tooltips, formats, handleNan, filter, partialEditable, calcWidth] =
+        useMemo(() => {
+            let hNan = !!props.nanValue;
+            if (baseColumns) {
+                try {
+                    let filter = false;
+                    let partialEditable = editable;
+                    const newCols: Record<string, ColumnDesc> = {};
+                    Object.entries(baseColumns).forEach(([cId, cDesc]) => {
+                        const nDesc = (newCols[cId] = { ...cDesc });
+                        if (typeof nDesc.filter != "boolean") {
+                            nDesc.filter = !!props.filter;
+                        }
+                        filter = filter || nDesc.filter;
+                        if (typeof nDesc.notEditable == "boolean") {
+                            nDesc.notEditable = !editable;
+                        } else {
+                            partialEditable = partialEditable || !nDesc.notEditable;
+                        }
+                        if (nDesc.tooltip === undefined) {
+                            nDesc.tooltip = props.tooltip;
+                        }
+                        if (typeof nDesc.notSortable != "boolean") {
+                            nDesc.notSortable = !sortable;
+                        }
+                    });
+                    addActionColumn(
+                        (active && partialEditable && (onAdd || onDelete) ? 1 : 0) +
+                            (active && filter ? 1 : 0) +
+                            (active && downloadable ? 1 : 0),
+                        newCols
+                    );
+                    const colsOrder = Object.keys(newCols).sort(getSortByIndex(newCols));
+                    let nbWidth = 0;
+                    const styTt = colsOrder.reduce<Record<string, Record<string, string>>>((pv, col) => {
+                        if (newCols[col].className) {
+                            pv.classNames = pv.classNames || {};
+                            pv.classNames[newCols[col].dfid] = newCols[col].className as string;
+                        }
+                        hNan = hNan || !!newCols[col].nanValue;
+                        if (newCols[col].tooltip) {
+                            pv.tooltips = pv.tooltips || {};
+                            pv.tooltips[newCols[col].dfid] = newCols[col].tooltip as string;
+                        }
+                        if (newCols[col].formatFn) {
+                            pv.formats = pv.formats || {};
+                            pv.formats[newCols[col].dfid] = newCols[col].formatFn;
+                        }
+                        if (newCols[col].width !== undefined) {
+                            const cssWidth = getCssSize(newCols[col].width);
+                            if (cssWidth) {
+                                newCols[col].width = cssWidth;
+                                nbWidth++;
+                            }
+                        }
+                        return pv;
+                    }, {});
+                    nbWidth = nbWidth ? colsOrder.length - nbWidth : 0;
+                    if (props.rowClassName) {
+                        styTt.classNames = styTt.classNames || {};
+                        styTt.classNames[ROW_CLASS_NAME] = props.rowClassName;
                     }
-                    filter = filter || nDesc.filter;
-                    if (typeof nDesc.notEditable == "boolean") {
-                        nDesc.notEditable = !editable;
-                    } else {
-                        partialEditable = partialEditable || !nDesc.notEditable;
-                    }
-                    if (nDesc.tooltip === undefined) {
-                        nDesc.tooltip = props.tooltip;
-                    }
-                });
-                addActionColumn(
-                    (active && partialEditable && (onAdd || onDelete) ? 1 : 0) +
-                        (active && filter ? 1 : 0) +
-                        (active && downloadable ? 1 : 0),
-                    newCols
-                );
-                const colsOrder = Object.keys(newCols).sort(getSortByIndex(newCols));
-                const styTt = colsOrder.reduce<Record<string, Record<string, string>>>((pv, col) => {
-                    if (newCols[col].className) {
-                        pv.classNames = pv.classNames || {};
-                        pv.classNames[newCols[col].dfid] = newCols[col].className as string;
-                    }
-                    hNan = hNan || !!newCols[col].nanValue;
-                    if (newCols[col].tooltip) {
-                        pv.tooltips = pv.tooltips || {};
-                        pv.tooltips[newCols[col].dfid] = newCols[col].tooltip as string;
-                    }
-                    if (newCols[col].formatFn) {
-                        pv.formats = pv.formats || {};
-                        pv.formats[newCols[col].dfid] = newCols[col].formatFn;
-                    }
-                    return pv;
-                }, {});
-                if (props.rowClassName) {
-                    styTt.classNames = styTt.classNames || {};
-                    styTt.classNames[ROW_CLASS_NAME] = props.rowClassName;
+                    return [
+                        colsOrder,
+                        newCols,
+                        styTt.classNames,
+                        styTt.tooltips,
+                        styTt.formats,
+                        hNan,
+                        filter,
+                        partialEditable,
+                        nbWidth > 0 ? `${100 / nbWidth}%` : undefined,
+                    ];
+                } catch (e) {
+                    console.info("ATable.columns: " + ((e as Error).message || e));
                 }
-                return [colsOrder, newCols, styTt.classNames, styTt.tooltips, styTt.formats, hNan, filter, partialEditable];
-            } catch (e) {
-                console.info("ATable.columns: " + ((e as Error).message || e));
             }
-        }
-        return [
-            [],
-            {} as Record<string, ColumnDesc>,
-            {} as Record<string, string>,
-            {} as Record<string, string>,
-            {} as Record<string, string>,
-            hNan,
-            false,
-            false,
-        ];
-    }, [
-        active,
-        editable,
-        onAdd,
-        onDelete,
-        baseColumns,
-        props.rowClassName,
-        props.tooltip,
-        props.nanValue,
-        props.filter,
-        downloadable,
-    ]);
+            return [
+                [],
+                {} as Record<string, ColumnDesc>,
+                {} as Record<string, string>,
+                {} as Record<string, string>,
+                {} as Record<string, string>,
+                hNan,
+                false,
+                false,
+                "",
+            ];
+        }, [
+            active,
+            editable,
+            onAdd,
+            onDelete,
+            baseColumns,
+            props.rowClassName,
+            props.tooltip,
+            props.nanValue,
+            props.filter,
+            downloadable,
+            sortable,
+        ]);
 
     const boxBodySx = useMemo(() => ({ height: height }), [height]);
 
@@ -389,7 +415,18 @@ const AutoLoadingTable = (props: TaipyTableProps) => {
             return new Promise<void>((resolve, reject) => {
                 const cols = colsOrder.map((col) => columns[col].dfid).filter((c) => c != EDIT_COL);
                 const afs = appliedFilters.filter((fd) => Object.values(columns).some((cd) => cd.dfid === fd.col));
-                const key = getPageKey(columns, "Infinite", cols, orderBy, order, afs, aggregates, cellClassNames, tooltips, formats);
+                const key = getPageKey(
+                    columns,
+                    "Infinite",
+                    cols,
+                    orderBy,
+                    order,
+                    afs,
+                    aggregates,
+                    cellClassNames,
+                    tooltips,
+                    formats
+                );
                 page.current = {
                     key: key,
                     promises: { ...page.current.promises, [startIndex]: { resolve: resolve, reject: reject } },
@@ -594,7 +631,13 @@ const AutoLoadingTable = (props: TaipyTableProps) => {
     const boxSx = useMemo(() => ({ ...baseBoxSx, width: width }), [width]);
 
     return (
-        <Box id={id} sx={boxSx} className={`${className} ${getSuffixedClassNames(className, "-autoloading")} ${getComponentClassName(props.children)}`}>
+        <Box
+            id={id}
+            sx={boxSx}
+            className={`${className} ${getSuffixedClassNames(className, "-autoloading")} ${getComponentClassName(
+                props.children
+            )}`}
+        >
             <Paper sx={paperSx}>
                 <Tooltip title={hover || ""}>
                     <TableContainer>
@@ -605,10 +648,20 @@ const AutoLoadingTable = (props: TaipyTableProps) => {
                                         <TableCell
                                             key={`head${columns[col].dfid}`}
                                             sortDirection={orderBy === columns[col].dfid && order}
-                                            sx={columns[col].width ? { width: columns[col].width } : {}}
-                                            className={col === "EDIT_COL"
-                                                ? getSuffixedClassNames(className, "-action")
-                                                : getSuffixedClassNames(className, generateHeaderClassName(columns[col].dfid))
+                                            sx={
+                                                columns[col].width
+                                                    ? { minWidth: columns[col].width }
+                                                    : calcWidth
+                                                    ? { width: calcWidth }
+                                                    : undefined
+                                            }
+                                            className={
+                                                col === "EDIT_COL"
+                                                    ? getSuffixedClassNames(className, "-action")
+                                                    : getSuffixedClassNames(
+                                                          className,
+                                                          generateHeaderClassName(columns[col].dfid)
+                                                      )
                                             }
                                         >
                                             {columns[col].dfid === EDIT_COL ? (
@@ -653,8 +706,8 @@ const AutoLoadingTable = (props: TaipyTableProps) => {
                                                     direction={orderBy === columns[col].dfid ? order : "asc"}
                                                     data-dfid={columns[col].dfid}
                                                     onClick={onSort}
-                                                    disabled={!active}
-                                                    hideSortIcon={!active}
+                                                    disabled={!active || columns[col].notSortable}
+                                                    hideSortIcon={!active || columns[col].notSortable}
                                                 >
                                                     <Box sx={headBoxSx}>
                                                         {columns[col].groupBy ? (

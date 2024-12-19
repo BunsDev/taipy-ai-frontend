@@ -388,6 +388,8 @@ export interface ColumnDesc {
     lov?: string[];
     /** If true the user can enter any value besides the lov values. */
     freeLov?: boolean;
+    /** If true, the column cannot be sorted */
+    notSortable?: boolean;
 }
 /**
  * A cell value type.
