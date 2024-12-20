@@ -70,6 +70,25 @@ describe("Button Component", () => {
         const elt = getByText("val");
         expect(elt).not.toBeDisabled();
     });
+    it("renders with default properties",()=>{
+        const {getByRole} = render(<Button label="val"/>);
+        const elt = getByRole("button");
+        expect(elt).toBeInTheDocument();
+        expect(elt).toHaveClass("MuiButton-sizeMedium");
+        expect(elt).toHaveClass("MuiButton-outlinedPrimary");
+    });
+    it("applies correct size",()=>{
+        const {getByRole}=render(<Button label="val" size="large"/>);
+        const elt = getByRole("button");
+        expect(elt).toBeInTheDocument();
+        expect(elt).toHaveClass("MuiButton-sizeLarge");
+    });
+    it("applies correct variant",()=>{
+        const {getByRole}=render(<Button label="val" variant="text"/>);
+        const elt=getByRole("button");
+        expect(elt).toBeInTheDocument();
+        expect(elt).toHaveClass("MuiButton-textPrimary");
+    });
     it("dispatch a well formed message", async () => {
         const dispatch = jest.fn();
         const state: TaipyState = INITIAL_STATE;

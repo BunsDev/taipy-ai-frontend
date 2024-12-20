@@ -126,16 +126,20 @@ export interface TableProps extends TaipyPaginatedTableProps {
 }
 export declare const Table: (props: TableProps) => JSX.Element;
 
+export interface FilterColumnDesc extends ColumnDesc {
+    params?: number[];
+}
 export interface FilterDesc {
     col: string;
     action: string;
     value: string | number | boolean | Date;
     type: string;
+    params?: number[];
 }
 export interface TableFilterProps {
     fieldHeader?: string;
     fieldHeaderTooltip?: string;
-    columns: Record<string, ColumnDesc>;
+    columns: Record<string, FilterColumnDesc>;
     colsOrder?: Array<string>;
     onValidate: (data: Array<FilterDesc>) => void;
     appliedFilters?: Array<FilterDesc>;
@@ -144,15 +148,19 @@ export interface TableFilterProps {
 }
 export declare const TableFilter: (props: TableFilterProps) => JSX.Element;
 
+export interface SortColumnDesc extends ColumnDesc {
+    params?: number[];
+}
 export interface SortDesc {
     col: string;
     order: boolean;
+    params?: number[];
 }
 
 export interface TableSortProps {
     fieldHeader?: string;
     fieldHeaderTooltip?: string;
-    columns: Record<string, ColumnDesc>;
+    columns: Record<string, SortColumnDesc>;
     colsOrder?: Array<string>;
     onValidate: (data: Array<SortDesc>) => void;
     appliedSorts?: Array<SortDesc>;

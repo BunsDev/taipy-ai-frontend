@@ -12,9 +12,15 @@
 import typing as t
 from dataclasses import dataclass
 from datetime import date, datetime
+from enum import Enum
 
 from taipy.core import Scenario
 from taipy.gui.gui import _DoNotUpdate
+
+
+class ParamType(Enum):
+    ScenarioConfigId = 0
+    ScenarioId = 1
 
 
 @dataclass
@@ -35,6 +41,9 @@ class _Filter(_DoNotUpdate):
         elif self.property_type is str:
             return "str"
         return "any"
+
+    def get_params(self) -> t.Optional[t.List[ParamType]]:
+        return None
 
 
 @dataclass
@@ -96,6 +105,10 @@ class DataNodeFilter(_Filter):
     """
 
     property_id: str
+    params: t.Optional[t.List[ParamType]] = None
 
     def get_property(self):
         return self.property_id
+
+    def get_params(self):
+        return self.params

@@ -30,8 +30,6 @@ export interface SelTreeProps extends LovProps, TaipyLabelProps {
     filter?: boolean;
     multiple?: boolean;
     width?: string | number;
-    dropdown?: boolean;
-    mode?: string;
 }
 
 export interface LovProps<T = string | string[], U = string> extends TaipyActiveProps, TaipyChangeProps {

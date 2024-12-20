@@ -37,8 +37,8 @@ export enum Types {
     SetLocations = "SET_LOCATIONS",
     SetTheme = "SET_THEME",
     SetTimeZone = "SET_TIMEZONE",
-    SetAlert = "SET_ALERT",
-    DeleteAlert = "DELETE_ALERT",
+    SetNotification = "SET_NOTIFICATION",
+    DeleteNotification = "DELETE_NOTIFICATION",
     SetBlock = "SET_BLOCK",
     Navigate = "NAVIGATE",
     ClientId = "CLIENT_ID",
@@ -64,7 +64,7 @@ export interface TaipyState {
     dateFormat?: string;
     dateTimeFormat?: string;
     numberFormat?: string;
-    alerts: AlertMessage[];
+    notifications: NotificationMessage[];
     block?: BlockMessage;
     navigateTo?: string;
     navigateParams?: Record<string, string>;
@@ -88,7 +88,7 @@ export interface NamePayload {
     payload: Record<string, unknown>;
 }
 
-export interface AlertMessage {
+export interface NotificationMessage {
     atype: string;
     message: string;
     system: boolean;
@@ -109,7 +109,7 @@ interface TaipyMultipleMessageAction extends TaipyBaseAction {
     actions: TaipyBaseAction[];
 }
 
-interface TaipyAlertAction extends TaipyBaseAction, AlertMessage {}
+interface TaipyNotificationAction extends TaipyBaseAction, NotificationMessage {}
 
 interface TaipyDeleteAlertAction extends TaipyBaseAction {
     notificationId: string;
@@ -202,7 +202,7 @@ export const INITIAL_STATE: TaipyState = {
     id: getLocalStorageValue(TAIPY_CLIENT_ID, ""),
     menu: {},
     ackList: [],
-    alerts: [],
+    notifications: [],
 };
 
 export const taipyInitialize = (initialState: TaipyState): TaipyState => ({
@@ -218,7 +218,7 @@ export const messageToAction = (message: WsMessage) => {
         } else if (message.type === "U") {
             return createUpdateAction(message as unknown as NamePayload);
         } else if (message.type === "AL") {
-            return createAlertAction(message as unknown as AlertMessage);
+            return createNotificationAction(message as unknown as NotificationMessage);
         } else if (message.type === "BL") {
             return createBlockAction(message as unknown as BlockMessage);
         } else if (message.type === "NA") {
@@ -376,26 +376,26 @@ export const taipyReducer = (state: TaipyState, baseAction: TaipyBaseAction): Ta
             };
         case Types.SetLocations:
             return { ...state, locations: action.payload.value as Record<string, string> };
-        case Types.SetAlert:
-            const alertAction = action as unknown as TaipyAlertAction;
+        case Types.SetNotification:
+            const notificationAction = action as unknown as TaipyNotificationAction;
             return {
                 ...state,
-                alerts: [
-                    ...state.alerts,
+                notifications: [
+                    ...state.notifications,
                     {
-                        atype: alertAction.atype,
-                        message: alertAction.message,
-                        system: alertAction.system,
-                        duration: alertAction.duration,
-                        notificationId: alertAction.notificationId || nanoid(),
+                        atype: notificationAction.atype,
+                        message: notificationAction.message,
+                        system: notificationAction.system,
+                        duration: notificationAction.duration,
+                        notificationId: notificationAction.notificationId || nanoid(),
                     },
                 ],
             };
-        case Types.DeleteAlert:
-            const deleteAlertAction = action as unknown as TaipyAlertAction;
+        case Types.DeleteNotification:
+            const deleteNotificationAction = action as unknown as TaipyNotificationAction;
             return {
                 ...state,
-                alerts: state.alerts.filter((alert) => alert.notificationId !== deleteAlertAction.notificationId),
+                notifications: state.notifications.filter(notification => notification.notificationId !== deleteNotificationAction.notificationId),
             };
         case Types.SetBlock:
             const blockAction = action as unknown as TaipyBlockAction;
@@ -807,7 +807,7 @@ export const createTimeZoneAction = (timeZone: string, fromBackend = false): Tai
     payload: { timeZone: timeZone, fromBackend: fromBackend },
 });
 
-const getAlertType = (aType: string) => {
+const getNotificationType = (aType: string) => {
     aType = aType.trim();
     if (aType) {
         aType = aType.charAt(0).toLowerCase();
@@ -825,17 +825,17 @@ const getAlertType = (aType: string) => {
     return aType;
 };
 
-export const createAlertAction = (alert: AlertMessage): TaipyAlertAction => ({
-    type: Types.SetAlert,
-    atype: getAlertType(alert.atype),
-    message: alert.message,
-    system: alert.system,
-    duration: alert.duration,
-    notificationId: alert.notificationId,
+export const createNotificationAction = (notification: NotificationMessage): TaipyNotificationAction => ({
+    type: Types.SetNotification,
+    atype: getNotificationType(notification.atype),
+    message: notification.message,
+    system: notification.system,
+    duration: notification.duration,
+    notificationId: notification.notificationId,
 });
 
 export const createDeleteAlertAction = (notificationId: string): TaipyDeleteAlertAction => ({
-    type: Types.DeleteAlert,
+    type: Types.DeleteNotification,
     notificationId,
 });
 

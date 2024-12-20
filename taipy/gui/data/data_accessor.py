@@ -110,13 +110,14 @@ class _DataAccessors(object):
         self._register(_NumpyDataAccessor)
 
     def _register(self, cls: t.Type[_DataAccessor]) -> None:
+        """Register a new DataAccessor type."""
         if not inspect.isclass(cls):
-            raise AttributeError("The argument of 'DataAccessors.register' should be a class")
+            raise AttributeError("The argument of 'DataAccessors.register()' should be a class")
         if not issubclass(cls, _DataAccessor):
             raise TypeError(f"Class {cls.__name__} is not a subclass of DataAccessor")
         classes = cls.get_supported_classes()
         if not classes:
-            raise TypeError(f"method {cls.__name__}.get_supported_classes returned an invalid value")
+            raise TypeError(f"{cls.__name__}.get_supported_classes() returned an invalid value")
         # check existence
         inst: t.Optional[_DataAccessor] = None
         for cl in classes:
@@ -132,11 +133,21 @@ class _DataAccessors(object):
                 for cl in classes:
                     self.__access_4_type[cl] = inst  # type: ignore
 
+    def _unregister(self, cls: t.Type[_DataAccessor]) -> None:
+        """Unregisters a DataAccessor type."""
+        if cls in self.__access_4_type:
+            del self.__access_4_type[cls]
+
     def __get_instance(self, value: _TaipyData) -> _DataAccessor:  # type: ignore
         value = value.get() if isinstance(value, _TaipyData) else value
         access = self.__access_4_type.get(type(value))
         if access is None:
             if value is not None:
+                converted_value = type(self.__gui)._convert_unsupported_data(value)
+                if converted_value is not None:
+                    access = self.__access_4_type.get(type(converted_value))
+                    if access is not None:
+                        return access
                 _warn(f"Can't find Data Accessor for type {str(type(value))}.")
             return self.__invalid_data_accessor
         return access

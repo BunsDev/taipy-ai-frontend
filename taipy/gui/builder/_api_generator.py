@@ -39,7 +39,7 @@ class _ElementApiGenerator(object, metaclass=_Singleton):
 
     @staticmethod
     def get_properties_dict(property_list: t.List[VisElementProperties]) -> t.Dict[str, t.Any]:
-        return {prop["name"]: prop.get("type", "str") for prop in property_list}
+        return {prop["name"]: prop.get("type", "str") for prop in property_list if not prop.get("hide", False)}
 
     def add_default(self):
         if self.__module is not None:

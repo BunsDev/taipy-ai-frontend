@@ -19,6 +19,7 @@ class VisElementProperties(t.TypedDict):
     doc: str
     default_value: t.Any
     default_property: t.Any
+    hide: t.Optional[bool]
 
 
 class VisElementDetail(t.TypedDict):
@@ -40,6 +41,7 @@ def _resolve_inherit_property(element: VisElement, viselements: VisElements) -> 
     properties = deepcopy(element_detail["properties"])
     if "inherits" not in element_detail:
         return properties
+    hidden_property_names = [p.get("name") for p in properties if p.get("hide", False)]
     for inherit in element_detail["inherits"]:
         inherit_element = None
         for element_type in "blocks", "controls", "undocumented":
@@ -48,7 +50,8 @@ def _resolve_inherit_property(element: VisElement, viselements: VisElements) -> 
                 break
         if inherit_element is None:
             raise RuntimeError(f"Error resolving inherit element with name {inherit} in viselements.json")
-        properties = properties + _resolve_inherit_property(inherit_element, viselements)
+        inherited_props = _resolve_inherit_property(inherit_element, viselements)
+        properties = properties + [p for p in inherited_props if p.get("name") not in hidden_property_names]
     return properties
 
 

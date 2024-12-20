@@ -37,40 +37,41 @@ import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
 import { TreeItem } from "@mui/x-tree-view/TreeItem";
 
 import {
-    useDispatch,
-    useModule,
-    getUpdateVar,
-    createSendUpdateAction,
-    useDispatchRequestUpdateOnFirstRender,
     createRequestUpdateAction,
-    useDynamicProperty,
-    ColumnDesc,
-    FilterDesc,
-    TableFilter,
-    SortDesc,
-    TableSort,
-    useClassNames,
+    createSendUpdateAction,
     getSuffixedClassNames,
+    getUpdateVar,
+    useClassNames,
+    useDispatch,
+    useDispatchRequestUpdateOnFirstRender,
+    useModule,
+    useDynamicProperty,
+    FilterColumnDesc,
+    FilterDesc,
+    SortColumnDesc,
+    SortDesc,
+    TableFilter,
+    TableSort,
 } from "taipy-gui";
 
-import { Cycles, Cycle, DataNodes, NodeType, Scenarios, Scenario, DataNode, Sequence, Sequences } from "./utils/types";
+import { Cycle, Cycles, DataNode, DataNodes, NodeType, Scenario, Scenarios, Sequence, Sequences } from "./utils/types";
 import {
     Cycle as CycleIcon,
     Datanode as DatanodeIcon,
-    Sequence as SequenceIcon,
     Scenario as ScenarioIcon,
+    Sequence as SequenceIcon,
 } from "./icons";
 import {
+    getUpdateVarNames,
+    iconLabelSx,
+    tinyIconButtonSx,
+    tinySelPinIconButtonSx,
     BadgePos,
     BadgeSx,
     BaseTreeViewSx,
     CoreProps,
     FlagSx,
     ParentItemSx,
-    getUpdateVarNames,
-    iconLabelSx,
-    tinyIconButtonSx,
-    tinySelPinIconButtonSx,
 } from "./utils";
 
 export interface EditProps {
@@ -282,7 +283,7 @@ const filterTree = (entities: Entities, search: string, leafType: NodeType, coun
             count.nb++;
             return emptyEntity;
         })
-        .filter((i) => (i as unknown[]).length !== 0);
+        .filter((item) => (item as unknown[]).length > 3 && (item[3] == leafType || !item[2] || item[2].length > 0));
     if (top && count.nb == 0) {
         return entities;
     }
@@ -502,21 +503,22 @@ const CoreSelector = (props: CoreSelectorProps) => {
     const colFilters = useMemo(() => {
         try {
             const res = props.filter
-                ? (JSON.parse(props.filter) as Array<[string, string, string, string[]]>)
+                ? (JSON.parse(props.filter) as Array<[string, string, string, string[], number[]]>)
                 : undefined;
             return Array.isArray(res)
-                ? res.reduce((pv, [name, id, coltype, lov], idx) => {
+                ? res.reduce((pv, [name, id, colType, lov, params], idx) => {
                     pv[name] = {
                         dfid: id,
                         title: name,
-                        type: coltype,
+                        type: colType,
                         index: idx,
                         filter: true,
-                        lov: lov,
+                        lov,
                         freeLov: !!lov,
+                        params
                     };
                     return pv;
-                }, {} as Record<string, ColumnDesc>)
+                }, {} as Record<string, FilterColumnDesc>)
                 : undefined;
         } catch {
             return undefined;
@@ -531,18 +533,20 @@ const CoreSelector = (props: CoreSelectorProps) => {
                 if (old.length != filters.length || JSON.stringify(old) != jsonFilters) {
                     localStoreSet(jsonFilters, id, lovPropertyName, "filter");
                     const filterVar = getUpdateVar(updateCoreVars, "filter");
-                    const lovVar = getUpdateVarNames(updateVars, lovPropertyName);
-                    Promise.resolve().then(() =>
-                        dispatch(
-                            createRequestUpdateAction(
-                                id,
-                                module,
-                                lovVar,
-                                true,
-                                filterVar ? { [filterVar]: filters } : undefined
+                    if (filterVar) {
+                        const lovVar = getUpdateVarNames(updateVars, lovPropertyName);
+                        Promise.resolve().then(() =>
+                            dispatch(
+                                createRequestUpdateAction(
+                                    id,
+                                    module,
+                                    lovVar,
+                                    true,
+                                    { [filterVar]: filters }
+                                )
                             )
-                        )
-                    );
+                        );
+                    }
                     return filters;
                 }
                 return old;
@@ -554,12 +558,12 @@ const CoreSelector = (props: CoreSelectorProps) => {
     // sort
     const colSorts = useMemo(() => {
         try {
-            const res = props.sort ? (JSON.parse(props.sort) as Array<[string, string]>) : undefined;
+            const res = props.sort ? (JSON.parse(props.sort) as Array<[string, string, number[]]>) : undefined;
             return Array.isArray(res)
-                ? res.reduce((pv, [name, id], idx) => {
-                    pv[name] = { dfid: id, title: name, type: "str", index: idx };
+                ? res.reduce((pv, [name, id, params], idx) => {
+                    pv[name] = { dfid: id, title: name, type: "str", index: idx, params };
                     return pv;
-                }, {} as Record<string, ColumnDesc>)
+                }, {} as Record<string, SortColumnDesc>)
                 : undefined;
         } catch {
             return undefined;
@@ -574,15 +578,17 @@ const CoreSelector = (props: CoreSelectorProps) => {
                 if (old.length != sorts.length || JSON.stringify(old) != jsonSorts) {
                     localStoreSet(jsonSorts, id, lovPropertyName, "sort");
                     const sortVar = getUpdateVar(updateCoreVars, "sort");
-                    dispatch(
-                        createRequestUpdateAction(
-                            id,
-                            module,
-                            getUpdateVarNames(updateVars, lovPropertyName),
-                            true,
-                            sortVar ? { [sortVar]: sorts } : undefined
-                        )
-                    );
+                    if (sortVar) {
+                        dispatch(
+                            createRequestUpdateAction(
+                                id,
+                                module,
+                                getUpdateVarNames(updateVars, lovPropertyName),
+                                true,
+                                { [sortVar]: sorts }
+                            )
+                        );
+                    }
                     return sorts;
                 }
                 return old;

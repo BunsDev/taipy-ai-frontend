@@ -37,6 +37,7 @@
 @import 'controls/number.css';
 @import 'controls/slider.css';
 @import 'controls/selector.css';
+@import 'controls/status.css';
 @import 'controls/toggle.css';
 @import 'controls/file_download.css';
 @import 'controls/file_selector.css';

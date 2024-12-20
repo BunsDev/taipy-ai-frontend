@@ -189,7 +189,7 @@ describe("FileSelector Component", () => {
         // Check if the alert action has been dispatched
         expect(mockDispatch).toHaveBeenCalledWith(
             expect.objectContaining({
-                type: "SET_ALERT",
+                type: "SET_NOTIFICATION",
                 atype: "success",
                 duration: 3000,
                 message: "mocked response",
@@ -225,7 +225,7 @@ describe("FileSelector Component", () => {
         // Check if the alert action has been dispatched
         expect(mockDispatch).toHaveBeenCalledWith(
             expect.objectContaining({
-                type: "SET_ALERT",
+                type: "SET_NOTIFICATION",
                 atype: "error",
                 duration: 3000,
                 message: "Upload failed",
@@ -302,7 +302,7 @@ describe("FileSelector Component", () => {
 
         // Wait for the upload to complete
         await waitFor(() => expect(mockDispatch).toHaveBeenCalled());
-        
+
         // Check for input element
         const inputElt = selectorElt.parentElement?.parentElement?.querySelector("input");
         expect(inputElt).toBeInTheDocument();
@@ -331,7 +331,7 @@ describe("FileSelector Component", () => {
 
         // Wait for the upload to complete
         await waitFor(() => expect(mockDispatch).toHaveBeenCalled());
-        
+
         // Check for input element
         const inputElt = selectorElt.parentElement?.parentElement?.querySelector("input");
         expect(inputElt).toBeInTheDocument();

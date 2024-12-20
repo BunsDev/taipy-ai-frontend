@@ -282,7 +282,7 @@ class Config:
                 corresponds to the data node configuration id. During the scenarios'
                 comparison, each comparator is applied to all the data nodes instantiated from
                 the data node configuration attached to the comparator. See
-                `(taipy.)compare_scenarios()^` more more details.
+                `(taipy.)compare_scenarios()^` more details.
             sequences (Optional[Dict[str, List[TaskConfig]]]): Dictionary of sequence descriptions.
                 The default value is None.
             **properties (dict[str, any]): A keyworded variable length list of additional arguments.
@@ -321,7 +321,7 @@ class Config:
                 corresponds to the data node configuration id. During the scenarios'
                 comparison, each comparator is applied to all the data nodes instantiated from
                 the data node configuration attached to the comparator. See
-                `taipy.compare_scenarios()^` more more details.
+                `taipy.compare_scenarios()^` more details.
             sequences (Optional[Dict[str, List[TaskConfig]]]): Dictionary of sequences. The default value is None.
             **properties (dict[str, any]): A keyworded variable length list of additional arguments.
 

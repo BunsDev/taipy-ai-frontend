@@ -173,6 +173,19 @@ describe("Input Component", () => {
         const visibilityButton = getByLabelText("toggle password visibility");
         expect(visibilityButton).toBeInTheDocument();
     });
+    it("should prevent default action when mouse down event occurs on password visibility button", async () => {
+        const { getByLabelText } = render(<Input value={"Test Input"} type="password" />);
+        const visibilityButton = getByLabelText("toggle password visibility");
+        const keyDown = createEvent.mouseDown(visibilityButton);
+        fireEvent(visibilityButton, keyDown);
+        expect(keyDown.defaultPrevented).toBe(true);
+    });
+    it("parses actionKeys correctly", () => {
+        const { rerender } = render(<Input type="text" value="test" actionKeys="Enter;Escape;F1" />);
+        rerender(<Input type="text" value="test" actionKeys="Enter;F1;F2" />);
+        rerender(<Input type="text" value="test" actionKeys="F1;F2;F3" />);
+        rerender(<Input type="text" value="test" actionKeys="F2;F3;F4" />);
+    });
 });
 
 describe("Number Component", () => {
@@ -195,9 +208,11 @@ describe("Number Component", () => {
         getByDisplayValue("1");
     });
     it("is disabled", async () => {
-        const { getByDisplayValue } = render(<Input value={"33"} type="number" active={false} />);
+        const { getByDisplayValue, getByLabelText } = render(<Input value={"33"} type="number" active={false} />);
         const elt = getByDisplayValue("33");
         expect(elt).toBeDisabled();
+        const upSpinner = getByLabelText("Increment value");
+        expect(upSpinner).toBeDisabled();
     });
     it("is enabled by default", async () => {
         const { getByDisplayValue } = render(<Input value={"33"} type="number" />);
@@ -309,12 +324,6 @@ describe("Number Component", () => {
         await user.keyboard("[ArrowDown]");
         expect(elt.value).toBe("0");
     });
-    it("parses actionKeys correctly", () => {
-        const { rerender } = render(<Input type="text" value="test" actionKeys="Enter;Escape;F1" />);
-        rerender(<Input type="text" value="test" actionKeys="Enter;F1;F2" />);
-        rerender(<Input type="text" value="test" actionKeys="F1;F2;F3" />);
-        rerender(<Input type="text" value="test" actionKeys="F2;F3;F4" />);
-    });
     it("it should not decrement below the min value", () => {
         const { getByLabelText } = render(<Input id={"Test Input"} type="number" value="0" min={0} />);
         const downSpinner = getByLabelText("Decrement value");
@@ -332,12 +341,5 @@ describe("Number Component", () => {
         await waitFor(() => {
             expect(inputElement.value).toBe("20");
         });
-    });
-    it("should prevent default action when mouse down event occurs on password visibility button", async () => {
-        const { getByLabelText } = render(<Input value={"Test Input"} type="password" />);
-        const visibilityButton = getByLabelText("toggle password visibility");
-        const keyDown = createEvent.mouseDown(visibilityButton);
-        fireEvent(visibilityButton, keyDown);
-        expect(keyDown.defaultPrevented).toBe(true);
     });
 });

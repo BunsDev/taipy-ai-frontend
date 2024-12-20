@@ -41,6 +41,7 @@ class _TaskConfigChecker(_ConfigChecker):
                 self._check_inputs(task_config_id, task_config)
                 self._check_outputs(task_config_id, task_config)
                 self._check_if_children_config_id_is_overlapping_with_properties(task_config_id, task_config)
+                self._check_required_properties(task_config_id, task_config)
         return self._collector
 
     def _check_if_children_config_id_is_overlapping_with_properties(self, task_config_id: str, task_config: TaskConfig):
@@ -88,3 +89,16 @@ class _TaskConfigChecker(_ConfigChecker):
                 f"{task_config._FUNCTION} field of TaskConfig `{task_config_id}` must be"
                 f" populated with Callable value.",
             )
+
+    def _check_required_properties(self, task_config_id: str, task_config: TaskConfig):
+        task_config_properties = task_config.properties
+        for task_type, required_keys in TaskConfig._REQUIRED_PROPERTIES.items():
+            if task_config_properties.get(task_type, False):
+                for required_key in required_keys:
+                    if task_config_properties.get(required_key, None) is None:
+                        self._error(
+                            required_key,
+                            None,
+                            f"TaskConfig `{task_config_id}` is either missing the required property "
+                            f"`{required_key}` or the value is set to None.",
+                        )

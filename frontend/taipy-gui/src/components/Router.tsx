@@ -155,7 +155,7 @@ const Router = () => {
                                         ) : null}
                                     </Box>
                                     <ErrorBoundary FallbackComponent={ErrorFallback}>
-                                        <TaipyNotification alerts={state.alerts} />
+                                        <TaipyNotification notifications={state.notifications} />
                                         <UIBlocker block={state.block} />
                                         <Navigate
                                             to={state.navigateTo}

@@ -159,4 +159,7 @@ class _JobDispatcher(threading.Thread):
                 _TaipyLogger._get_logger().error(st)
             _JobManagerFactory._build_manager()._set(job)
         else:
+            for output in job.task.output.values():
+                output.track_edit(job_id=job.id)
+                output.unlock_edit()
             job.completed()

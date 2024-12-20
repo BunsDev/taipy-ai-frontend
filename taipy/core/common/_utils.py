@@ -10,6 +10,7 @@
 # specific language governing permissions and limitations under the License.
 
 import functools
+import re
 import time
 from collections import namedtuple
 from importlib import import_module
@@ -77,6 +78,10 @@ def _fct_to_dict(obj):
 
 def _fcts_to_dict(objs):
     return [d for obj in objs if (d := _fct_to_dict(obj)) is not None]
+
+
+def _normalize_path(path: str) -> str:
+    return re.sub(r"[\\]+", "/", path)
 
 
 _Subscriber = namedtuple("_Subscriber", "callback params")

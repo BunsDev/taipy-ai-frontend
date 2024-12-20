@@ -425,8 +425,8 @@ const PaginatedTable = (props: TaipyPaginatedTableProps) => {
     }, [pageSizeOptions, allowAllRows, pageSize]);
 
     const { rows, rowCount, filteredCount, compRows } = useMemo(() => {
-        const ret = { rows: [], rowCount: 0, filteredCount: 0, compRows: [] } as {
-            rows: RowType[];
+        const ret = { rows: undefined, rowCount: 0, filteredCount: 0, compRows: [] } as {
+            rows?: RowType[];
             rowCount: number;
             filteredCount: number;
             compRows: RowType[];
@@ -454,7 +454,7 @@ const PaginatedTable = (props: TaipyPaginatedTableProps) => {
                 createSendActionNameAction(updateVarName, module, {
                     action: onEdit,
                     value: value,
-                    index: getRowIndex(rows[rowIndex], rowIndex, startIndex),
+                    index: rows ? getRowIndex(rows[rowIndex], rowIndex, startIndex) : startIndex,
                     col: colName,
                     user_value: userValue,
                     tz: tz,
@@ -469,7 +469,7 @@ const PaginatedTable = (props: TaipyPaginatedTableProps) => {
             dispatch(
                 createSendActionNameAction(updateVarName, module, {
                     action: onDelete,
-                    index: getRowIndex(rows[rowIndex], rowIndex, startIndex),
+                    index: rows ? getRowIndex(rows[rowIndex], rowIndex, startIndex): startIndex,
                     user_data: userData,
                 })
             ),
@@ -481,7 +481,7 @@ const PaginatedTable = (props: TaipyPaginatedTableProps) => {
             dispatch(
                 createSendActionNameAction(updateVarName, module, {
                     action: onAction,
-                    index: getRowIndex(rows[rowIndex], rowIndex, startIndex),
+                    index: rows ? getRowIndex(rows[rowIndex], rowIndex, startIndex): startIndex,
                     col: colName === undefined ? null : colName,
                     value,
                     reason: value === undefined ? "click" : "button",
@@ -524,7 +524,7 @@ const PaginatedTable = (props: TaipyPaginatedTableProps) => {
                                             sortDirection={orderBy === columns[col].dfid && order}
                                             sx={
                                                 columns[col].width
-                                                    ? { width: columns[col].width }
+                                                    ? { minWidth: columns[col].width }
                                                     : nbWidth
                                                     ? { minWidth: `${100 / nbWidth}%` }
                                                     : undefined
@@ -614,7 +614,7 @@ const PaginatedTable = (props: TaipyPaginatedTableProps) => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {rows.map((row, index) => {
+                                {rows?.map((row, index) => {
                                     const sel = selected.indexOf(index + startIndex);
                                     if (sel == 0) {
                                         Promise.resolve().then(
@@ -664,7 +664,7 @@ const PaginatedTable = (props: TaipyPaginatedTableProps) => {
                                         </TableRow>
                                     );
                                 })}
-                                {rows.length == 0 &&
+                                {!rows &&
                                     loading &&
                                     Array.from(Array(30).keys(), (v, idx) => (
                                         <TableRow hover key={"rowSkel" + idx}>

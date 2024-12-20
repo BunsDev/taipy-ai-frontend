@@ -27,12 +27,14 @@ interface ButtonProps extends TaipyActiveProps {
     label: string;
     defaultLabel?: string;
     width?: string | number;
+    size?: "small" | "medium" | "large";
+    variant?: "text" | "outlined" | "contained";
 }
 
 const cardSx = { p: 0 };
 
 const Button = (props: ButtonProps) => {
-    const { id, onAction = "", defaultLabel } = props;
+    const { id, onAction = "", defaultLabel, size = "medium", variant = "outlined" } = props;
     const [value, setValue] = useState<stringIcon>("");
     const dispatch = useDispatch();
     const module = useModule();
@@ -40,7 +42,6 @@ const Button = (props: ButtonProps) => {
     const className = useClassNames(props.libClassName, props.dynamicClassName, props.className);
     const active = useDynamicProperty(props.active, props.defaultActive, true);
     const hover = useDynamicProperty(props.hoverText, props.defaultHoverText, undefined);
-
     const buttonSx = useMemo(() => (props.width ? { width: getCssSize(props.width) } : undefined), [props.width]);
 
     const handleClick = useCallback(() => {
@@ -67,7 +68,8 @@ const Button = (props: ButtonProps) => {
         <Tooltip title={hover || ""}>
             <MuiButton
                 id={id}
-                variant="outlined"
+                variant={variant}
+                size={size}
                 className={`${className} ${getComponentClassName(props.children)}`}
                 onClick={handleClick}
                 disabled={!active}

@@ -25,10 +25,11 @@ from taipy.core.data.pickle import PickleDataNode
 from taipy.core.job._job_manager_factory import _JobManagerFactory
 from taipy.core.scenario._scenario_manager_factory import _ScenarioManagerFactory
 from taipy.core.submission._submission_manager_factory import _SubmissionManagerFactory
-from taipy.core.submission.submission import Submission, SubmissionStatus
+from taipy.core.submission.submission import Submission
 from taipy.core.task._task_manager_factory import _TaskManagerFactory
-from taipy.gui import Gui
+from taipy.gui import Gui, State
 from taipy.gui_core._context import _GuiCoreContext
+from taipy.gui_core._utils import _ClientStatus
 
 a_cycle = Cycle(Frequency.DAILY, {}, datetime.now(), datetime.now(), datetime.now(), id=CycleId("CYCLE_id"))
 a_scenario = Scenario("scenario_config_id", None, {}, sequences={"sequence": {}})
@@ -66,9 +67,14 @@ def mock_core_get(entity_id):
     return a_task
 
 
-class MockState:
+class MockState(State):
     def __init__(self, **kwargs) -> None:
-        self.assign = kwargs.get("assign")
+        self.assign = t.cast(t.Callable, kwargs.get("assign")) # type: ignore[method-assign]
+        self.gui = t.cast(Gui, kwargs.get("gui"))
+    def get_gui(self):
+        return self.gui
+    def broadcast(self, name: str, value: t.Any):
+        pass
 
 
 class TestGuiCoreContext_is_readable:
@@ -96,7 +102,7 @@ class TestGuiCoreContext_is_readable:
     def test_cycle_adapter(self):
         with patch("taipy.gui_core._context.core_get", side_effect=mock_core_get):
             gui_core_context = _GuiCoreContext(Mock())
-            gui_core_context.scenario_by_cycle = {"a": 1}
+            gui_core_context.scenario_by_cycle = t.cast(dict, {"a": 1})
             outcome = gui_core_context.cycle_adapter(a_cycle)
             assert isinstance(outcome, list)
             assert outcome[0] == a_cycle.id
@@ -120,9 +126,9 @@ class TestGuiCoreContext_is_readable:
             gui_core_context = _GuiCoreContext(Mock())
             assign = Mock()
             gui_core_context.crud_scenario(
-                MockState(assign=assign),
+                MockState(assign=assign, gui=gui_core_context.gui),
                 "",
-                {
+                t.cast(dict, {
                     "args": [
                         "",
                         "",
@@ -132,7 +138,7 @@ class TestGuiCoreContext_is_readable:
                         {"name": "name", "id": a_scenario.id},
                     ],
                     "error_id": "error_var",
-                },
+                }),
             )
             assign.assert_not_called()
 
@@ -141,7 +147,7 @@ class TestGuiCoreContext_is_readable:
                 gui_core_context.crud_scenario(
                     MockState(assign=assign),
                     "",
-                    {
+                    t.cast(dict, {
                         "args": [
                             "",
                             "",
@@ -151,7 +157,7 @@ class TestGuiCoreContext_is_readable:
                             {"name": "name", "id": a_scenario.id},
                         ],
                         "error_id": "error_var",
-                    },
+                    }),
                 )
                 assign.assert_called_once()
                 assert assign.call_args.args[0] == "error_var"
@@ -164,12 +170,12 @@ class TestGuiCoreContext_is_readable:
             gui_core_context.edit_entity(
                 MockState(assign=assign),
                 "",
-                {
+                t.cast(dict, {
                     "args": [
                         {"name": "name", "id": a_scenario.id},
                     ],
                     "error_id": "error_var",
-                },
+                }),
             )
             assign.assert_called_once()
             assert assign.call_args.args[0] == "error_var"
@@ -180,12 +186,12 @@ class TestGuiCoreContext_is_readable:
                 gui_core_context.edit_entity(
                     MockState(assign=assign),
                     "",
-                    {
+                    t.cast(dict, {
                         "args": [
                             {"name": "name", "id": a_scenario.id},
                         ],
                         "error_id": "error_var",
-                    },
+                    }),
                 )
                 assign.assert_called_once()
                 assert assign.call_args.args[0] == "error_var"
@@ -198,10 +204,7 @@ class TestGuiCoreContext_is_readable:
             mockGui._get_authorization = lambda s: contextlib.nullcontext()
             gui_core_context = _GuiCoreContext(mockGui)
 
-            def sub_cb():
-                return True
-
-            gui_core_context.client_submission[a_submission.id] = SubmissionStatus.UNDEFINED
+            gui_core_context.client_submission[a_submission.id] = _ClientStatus("client_id", None)
             gui_core_context.submission_status_callback(a_submission.id)
             mockget.assert_called()
             found = False
@@ -248,12 +251,12 @@ class TestGuiCoreContext_is_readable:
             gui_core_context.act_on_jobs(
                 MockState(assign=assign),
                 "",
-                {
+                t.cast(dict, {
                     "args": [
                         {"id": [a_job.id], "action": "delete"},
                     ],
                     "error_id": "error_var",
-                },
+                }),
             )
             assign.assert_called_once()
             assert assign.call_args.args[0] == "error_var"
@@ -263,12 +266,12 @@ class TestGuiCoreContext_is_readable:
             gui_core_context.act_on_jobs(
                 MockState(assign=assign),
                 "",
-                {
+                t.cast(dict, {
                     "args": [
                         {"id": [a_job.id], "action": "cancel"},
                     ],
                     "error_id": "error_var",
-                },
+                }),
             )
             assign.assert_called_once()
             assert assign.call_args.args[0] == "error_var"
@@ -279,12 +282,12 @@ class TestGuiCoreContext_is_readable:
                 gui_core_context.act_on_jobs(
                     MockState(assign=assign),
                     "",
-                    {
+                    t.cast(dict, {
                         "args": [
                             {"id": [a_job.id], "action": "delete"},
                         ],
                         "error_id": "error_var",
-                    },
+                    }),
                 )
                 assign.assert_called_once()
                 assert assign.call_args.args[0] == "error_var"
@@ -294,12 +297,12 @@ class TestGuiCoreContext_is_readable:
                 gui_core_context.act_on_jobs(
                     MockState(assign=assign),
                     "",
-                    {
+                    t.cast(dict, {
                         "args": [
                             {"id": [a_job.id], "action": "cancel"},
                         ],
                         "error_id": "error_var",
-                    },
+                    }),
                 )
                 assign.assert_called_once()
                 assert assign.call_args.args[0] == "error_var"
@@ -312,12 +315,12 @@ class TestGuiCoreContext_is_readable:
             gui_core_context.edit_data_node(
                 MockState(assign=assign),
                 "",
-                {
+                t.cast(dict, {
                     "args": [
                         {"id": a_datanode.id},
                     ],
                     "error_id": "error_var",
-                },
+                }),
             )
             assign.assert_called_once()
             assert assign.call_args.args[0] == "error_var"
@@ -328,12 +331,12 @@ class TestGuiCoreContext_is_readable:
                 gui_core_context.edit_data_node(
                     MockState(assign=assign),
                     "",
-                    {
+                    t.cast(dict, {
                         "args": [
                             {"id": a_datanode.id},
                         ],
                         "error_id": "error_var",
-                    },
+                    }),
                 )
                 assign.assert_called_once()
                 assert assign.call_args.args[0] == "error_var"
@@ -348,12 +351,12 @@ class TestGuiCoreContext_is_readable:
             gui_core_context.lock_datanode_for_edit(
                 MockState(assign=assign),
                 "",
-                {
+                t.cast(dict, {
                     "args": [
                         {"id": a_datanode.id},
                     ],
                     "error_id": "error_var",
-                },
+                }),
             )
             assign.assert_called_once()
             assert assign.call_args.args[0] == "error_var"
@@ -364,12 +367,12 @@ class TestGuiCoreContext_is_readable:
                 gui_core_context.lock_datanode_for_edit(
                     MockState(assign=assign),
                     "",
-                    {
+                    t.cast(dict, {
                         "args": [
                             {"id": a_datanode.id},
                         ],
                         "error_id": "error_var",
-                    },
+                    }),
                 )
                 assign.assert_called_once()
                 assert assign.call_args.args[0] == "error_var"
@@ -395,12 +398,7 @@ class TestGuiCoreContext_is_readable:
             gui_core_context.update_data(
                 MockState(assign=assign),
                 "",
-                {
-                    "args": [
-                        {"id": a_datanode.id},
-                    ],
-                    "error_id": "error_var",
-                },
+                t.cast(dict, {"args": [{"id": a_datanode.id, "error_id": "error_var"}]})
             )
             assign.assert_called()
             assert assign.call_args_list[0].args[0] == "error_var"
@@ -411,12 +409,7 @@ class TestGuiCoreContext_is_readable:
                 gui_core_context.update_data(
                     MockState(assign=assign),
                     "",
-                    {
-                        "args": [
-                            {"id": a_datanode.id},
-                        ],
-                        "error_id": "error_var",
-                    },
+                    t.cast(dict, {"args": [{"id": a_datanode.id, "error_id": "error_var"}]})
                 )
                 assign.assert_called_once()
                 assert assign.call_args.args[0] == "error_var"

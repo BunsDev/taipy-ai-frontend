@@ -21,6 +21,8 @@ import React, {
     useEffect,
     ReactNode,
     lazy,
+    ChangeEvent,
+    UIEvent,
 } from "react";
 import { SxProps, Theme, darken, lighten } from "@mui/material/styles";
 import Avatar from "@mui/material/Avatar";
@@ -39,7 +41,11 @@ import AttachFile from "@mui/icons-material/AttachFile";
 import ArrowDownward from "@mui/icons-material/ArrowDownward";
 import ArrowUpward from "@mui/icons-material/ArrowUpward";
 
-import { createRequestInfiniteTableUpdateAction, createSendActionNameAction } from "../../context/taipyReducers";
+import {
+    createNotificationAction,
+    createRequestInfiniteTableUpdateAction,
+    createSendActionNameAction,
+} from "../../context/taipyReducers";
 import { TaipyActiveProps, disableColor, getSuffixedClassNames } from "./utils";
 import { useClassNames, useDispatch, useDynamicProperty, useElementVisible, useModule } from "../../utils/hooks";
 import { LoVElt, useLovListMemo } from "./lovUtils";
@@ -49,6 +55,7 @@ import { RowType, TableValueType } from "./tableUtils";
 import { Stack } from "@mui/material";
 import { getComponentClassName } from "./TaipyStyle";
 import { noDisplayStyle } from "./utils";
+import { toDataUrl } from "../../utils/image";
 
 const Markdown = lazy(() => import("react-markdown"));
 
@@ -65,6 +72,7 @@ interface ChatProps extends TaipyActiveProps {
     pageSize?: number;
     showSender?: boolean;
     mode?: string;
+    allowSendImages?: boolean;
 }
 
 const ENTER_KEY = "Enter";
@@ -135,7 +143,7 @@ const defaultBoxSx = {
 } as SxProps<Theme>;
 const noAnchorSx = { overflowAnchor: "none", "& *": { overflowAnchor: "none" } } as SxProps<Theme>;
 const anchorSx = { overflowAnchor: "auto", height: "1px", width: "100%" } as SxProps<Theme>;
-const imageSx = {width:3/5, height:"auto"}
+const imageSx = { width: 3 / 5, height: "auto" };
 interface key2Rows {
     key: string;
 }
@@ -166,16 +174,11 @@ const ChatRow = (props: ChatRowProps) => {
             justifyContent={sender ? "flex-end" : undefined}
         >
             <Grid sx={sender ? senderMsgSx : undefined}>
-            {image?(
-                <Grid container justifyContent={sender ? "flex-end" : undefined}>
-                <Box
-                                component="img"
-                                sx={imageSx}
-                                alt="Uploaded image"
-                                src={image}
-                            />
-                </Grid>
-                            ):null}
+                {image ? (
+                    <Grid container justifyContent={sender ? "flex-end" : undefined}>
+                        <Box component="img" sx={imageSx} alt="Uploaded image" src={image} />
+                    </Grid>
+                ) : null}
                 {(!sender || showSender) && avatar ? (
                     <Stack direction="row" gap={1} justifyContent={sender ? "flex-end" : undefined}>
                         {!sender ? <Box sx={avatarColSx}>{avatar}</Box> : null}
@@ -227,9 +230,10 @@ const Chat = (props: ChatProps) => {
         onAction,
         withInput = true,
         defaultKey = "",
-        maxFileSize= 1 * 1024 * 1024, // 1 MB
+        maxFileSize = .8 * 1024 * 1024, // 0.8 MB
         pageSize = 50,
         showSender = false,
+        allowSendImages = true,
     } = props;
     const dispatch = useDispatch();
     const module = useModule();
@@ -240,12 +244,14 @@ const Chat = (props: ChatProps) => {
     const scrollDivRef = useRef<HTMLDivElement>(null);
     const anchorDivRef = useRef<HTMLElement>(null);
     const isAnchorDivVisible = useElementVisible(anchorDivRef);
+    const [enableSend, setEnableSend] = useState(false);
     const [showMessage, setShowMessage] = useState(false);
     const [anchorPopup, setAnchorPopup] = useState<HTMLDivElement | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [objectURLs, setObjectURLs] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const userScrolled = useRef(false);
 
     const className = useClassNames(props.libClassName, props.dynamicClassName, props.className);
     const active = useDynamicProperty(props.active, props.defaultActive, true);
@@ -269,61 +275,94 @@ const Chat = (props: ChatProps) => {
         [props.height]
     );
 
-    const handleAction = useCallback(
-        (evt: KeyboardEvent<HTMLDivElement>) => {
-            if (!evt.shiftKey && !evt.ctrlKey && !evt.altKey && ENTER_KEY == evt.key) {
-                const elt = evt.currentTarget.querySelector("input");
-                if (elt?.value) {
-                    dispatch(
-                        createSendActionNameAction(id, module, onAction, evt.key, updateVarName, elt?.value,senderId, imagePreview)
-                    );
-                    elt.value = "";
-                    setSelectedFile(null);
-                    setImagePreview(null);
-                }
-                evt.preventDefault();
+    const onChangeHandler = useCallback((evt: ChangeEvent<HTMLInputElement>) => setEnableSend(!!evt.target.value), []);
+
+    const sendAction = useCallback(
+        (elt: HTMLInputElement | null | undefined, reason: string) => {
+            if (elt && (elt?.value || imagePreview)) {
+                toDataUrl(imagePreview)
+                    .then((dataUrl) => {
+                        dispatch(
+                            createSendActionNameAction(
+                                id,
+                                module,
+                                onAction,
+                                reason,
+                                updateVarName,
+                                elt?.value,
+                                senderId,
+                                dataUrl
+                            )
+                        );
+                        elt.value = "";
+                        setSelectedFile(null);
+                        setImagePreview((url) => {
+                            url && URL.revokeObjectURL(url);
+                            return null;
+                        });
+                        fileInputRef.current && (fileInputRef.current.value = "");
+                    })
+                    .catch(console.log);
             }
         },
         [imagePreview, updateVarName, onAction, senderId, id, dispatch, module]
     );
 
-    const handleClick = useCallback(
-        (evt: MouseEvent<HTMLButtonElement>) => {
-            const elt = evt.currentTarget.parentElement?.parentElement?.querySelector("input");
-            if (elt?.value) {
-                dispatch(
-                    createSendActionNameAction(id, module, onAction, "click", updateVarName, elt?.value,senderId,imagePreview)
-                );
-                elt.value = "";
-                setSelectedFile(null);
-                setImagePreview(null);
+    const handleAction = useCallback(
+        (evt: KeyboardEvent<HTMLDivElement>) => {
+            if (!evt.shiftKey && !evt.ctrlKey && !evt.altKey && ENTER_KEY == evt.key) {
+                sendAction(evt.currentTarget.querySelector("input"), evt.key);
+                evt.preventDefault();
             }
-            evt.preventDefault();
         },
-        [imagePreview,updateVarName, onAction, senderId, id, dispatch, module]
+        [sendAction]
     );
 
-    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-            const file = event.target.files ? event.target.files[0] : null;
-            if (file) {
-                if (file.type.startsWith("image/") && file.size <= maxFileSize) {
-                    setSelectedFile(file);
-                    const newImagePreview = URL.createObjectURL(file);
-                    setImagePreview(newImagePreview);
-                    setObjectURLs((prevURLs) => [...prevURLs, newImagePreview]);
-                } else {
-                    setSelectedFile(null);
-                    setImagePreview(null);
-                }
+    const handleClick = useCallback(
+        (evt: MouseEvent<HTMLButtonElement>) => {
+            sendAction(evt.currentTarget.parentElement?.parentElement?.querySelector("input"), "click");
+            evt.preventDefault();
+        },
+        [sendAction]
+    );
+
+    const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files ? event.target.files[0] : null;
+        if (file) {
+            if (file.type.startsWith("image/") && file.size <= maxFileSize) {
+                setSelectedFile(file);
+                const newImagePreview = URL.createObjectURL(file);
+                setImagePreview(newImagePreview);
+                setObjectURLs((prevURLs) => [...prevURLs, newImagePreview]);
+            } else {
+                dispatch(
+                    createNotificationAction({
+                        atype: "info",
+                        message:
+                            file.size > maxFileSize
+                                ? `Image size is limited to ${maxFileSize / 1024} KB`
+                                : "Only image file are authorized",
+                        system: false,
+                        duration: 3000,
+                    })
+                );
+                setSelectedFile(null);
+                setImagePreview(null);
+                fileInputRef.current && (fileInputRef.current.value = "");
             }
-        };
-
-    const handleAttachClick = useCallback(() => {
-        if (fileInputRef.current) {
-            fileInputRef.current.click();
         }
-    }, [fileInputRef]);
+    }, [maxFileSize, dispatch]);
 
+    const handleAttachClick = useCallback(() => fileInputRef.current && fileInputRef.current.click(), [fileInputRef]);
+
+    const handleImageDelete = useCallback(() => {
+        setSelectedFile(null);
+        setImagePreview((url) => {
+            url && URL.revokeObjectURL(url);
+            return null;
+        });
+        fileInputRef.current && (fileInputRef.current.value = "");
+    }, []);
 
     const avatars = useMemo(() => {
         return users.reduce((pv, elt) => {
@@ -387,7 +426,7 @@ const Chat = (props: ChatProps) => {
     );
 
     const showBottom = useCallback(() => {
-        anchorDivRef.current?.scrollIntoView();
+        anchorDivRef.current?.scrollIntoView && anchorDivRef.current?.scrollIntoView();
         setShowMessage(false);
     }, []);
 
@@ -413,8 +452,9 @@ const Chat = (props: ChatProps) => {
                 }
             }
             page.current.key = getChatKey(0, pageSize);
+            !userScrolled.current && showBottom();
         }
-    }, [refresh, pageSize, props.messages]);
+    }, [refresh, pageSize, props.messages, showBottom]);
 
     useEffect(() => {
         if (showMessage && !isAnchorDivVisible) {
@@ -453,10 +493,14 @@ const Chat = (props: ChatProps) => {
         [loadMoreItems]
     );
 
+    const handleOnScroll = useCallback((evt: UIEvent) => {
+        userScrolled.current = (evt.target as HTMLDivElement).scrollHeight - (evt.target as HTMLDivElement).offsetHeight - (evt.target as HTMLDivElement).scrollTop > 1;
+    }, []);
+
     return (
         <Tooltip title={hover || ""}>
             <Paper className={`${className} ${getComponentClassName(props.children)}`} sx={boxSx} id={id}>
-                <Grid container rowSpacing={2} sx={gridSx} ref={scrollDivRef}>
+                <Grid container rowSpacing={2} sx={gridSx} ref={scrollDivRef} onScroll={handleOnScroll}>
                     {rows.length && !rows[0] ? (
                         <Grid className={getSuffixedClassNames(className, "-load")} size={12} sx={noAnchorSx}>
                             <Box sx={loadMoreSx}>
@@ -477,7 +521,11 @@ const Chat = (props: ChatProps) => {
                                 senderId={senderId}
                                 message={`${row[columns[1]]}`}
                                 name={columns[2] ? `${row[columns[2]]}` : "Unknown"}
-                                image={columns[3] && columns[3] != "_tp_index" && row[columns[3]] ? `${row[columns[3]]}` : undefined}
+                                image={
+                                    columns[3] && columns[3] != "_tp_index" && row[columns[3]]
+                                        ? `${row[columns[3]]}`
+                                        : undefined
+                                }
                                 className={className}
                                 getAvatar={getAvatar}
                                 index={idx}
@@ -498,60 +546,67 @@ const Chat = (props: ChatProps) => {
                 </Popper>
                 {withInput ? (
                     <>
-                    {imagePreview && selectedFile && (
+                        {imagePreview && (
                             <Box mb={1}>
                                 <Chip
-                                    label={selectedFile.name}
-                                    avatar={<Avatar alt="Image preview" src={imagePreview}/>}
-                                    onDelete={() => setSelectedFile(null)}
+                                    label={selectedFile?.name}
+                                    avatar={<Avatar alt="Image preview" src={imagePreview} />}
+                                    onDelete={handleImageDelete}
                                     variant="outlined"
                                 />
                             </Box>
                         )}
-                    <input
+                        <input
                             type="file"
                             ref={fileInputRef}
                             style={noDisplayStyle}
-                            onChange={(e) => handleFileSelect(e)}
+                            onChange={handleFileSelect}
                             accept="image/*"
                         />
 
-                    <TextField
-                        margin="dense"
-                        fullWidth
-                        className={getSuffixedClassNames(className, "-input")}
-                        label={`message (${senderId})`}
-                        disabled={!active}
-                        onKeyDown={handleAction}
-                        slotProps={{
-                            input: {
-                                startAdornment: (<InputAdornment position="start">
-                                    <IconButton
-                                            aria-label="upload image"
-                                            onClick={handleAttachClick}
-                                            edge="start"
-                                            disabled={!active}
-                                        >
-                                       <AttachFile color={disableColor("primary", !active)} />
-                                    </IconButton>
-
-                                </InputAdornment>),
-                                endAdornment: (
-                                    <InputAdornment position="end">
-                                        <IconButton
-                                            aria-label="send message"
-                                            onClick={handleClick}
-                                            edge="end"
-                                            disabled={!active}
-                                        >
-                                            <Send color={disableColor("primary", !active)} />
-                                        </IconButton>
-                                    </InputAdornment>
-                                ),
-                            },
-                        }}
-                        sx={inputSx}
-                    />
+                        <TextField
+                            margin="dense"
+                            fullWidth
+                            onChange={onChangeHandler}
+                            className={getSuffixedClassNames(className, "-input")}
+                            label={`message (${senderId})`}
+                            disabled={!active}
+                            onKeyDown={handleAction}
+                            slotProps={{
+                                input: {
+                                    startAdornment: allowSendImages ? (
+                                        <InputAdornment position="start">
+                                            <IconButton
+                                                aria-label="upload image"
+                                                onClick={handleAttachClick}
+                                                edge="start"
+                                                disabled={!active}
+                                            >
+                                                <AttachFile color={disableColor("primary", !active)} />
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ) : undefined,
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                aria-label="send message"
+                                                onClick={handleClick}
+                                                edge="end"
+                                                disabled={!active || !(enableSend || imagePreview)}
+                                            >
+                                                <Send
+                                                    color={disableColor(
+                                                        "primary",
+                                                        !active || !(enableSend || imagePreview)
+                                                    )}
+                                                />
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                },
+                            }}
+                            sx={inputSx}
+                        />
                     </>
                 ) : null}
                 {props.children}

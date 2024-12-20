@@ -34,12 +34,17 @@ import { getSuffixedClassNames } from "./utils";
 export interface SortDesc {
     col: string;
     order: boolean;
+    params?: number[];
+}
+
+export interface SortColumnDesc extends ColumnDesc {
+    params?: number[];
 }
 
 interface TableSortProps {
     fieldHeader?: string;
     fieldHeaderTooltip?: string;
-    columns: Record<string, ColumnDesc>;
+    columns: Record<string, SortColumnDesc>;
     colsOrder?: Array<string>;
     onValidate: (data: Array<SortDesc>) => void;
     appliedSorts?: Array<SortDesc>;
@@ -73,12 +78,13 @@ const badgeSx = {
 };
 const orderCaptionSx = { ml: 1 };
 
-const getSortDesc = (columns: Record<string, ColumnDesc>, colId?: string, asc?: boolean) =>
+const getSortDesc = (columns: Record<string, SortColumnDesc>, colId?: string, asc?: boolean) =>
     colId && asc !== undefined
         ? ({
-            col: columns[colId].dfid,
-            order: !!asc,
-        } as SortDesc)
+              col: columns[colId].dfid,
+              order: !!asc,
+              params: columns[colId].params,
+          } as SortDesc)
         : undefined;
 
 const SortRow = (props: SortRowProps) => {
@@ -138,7 +144,11 @@ const SortRow = (props: SortRowProps) => {
                 <FormControl margin="dense">
                     <InputLabel>Column</InputLabel>
                     <Tooltip title={fieldHeaderTooltip} placement="top">
-                        <Select value={colId || ""} onChange={onColSelect} input={<OutlinedInput label={fieldHeader} />}>
+                        <Select
+                            value={colId || ""}
+                            onChange={onColSelect}
+                            input={<OutlinedInput label={fieldHeader} />}
+                        >
                             {cols.map((col) => (
                                 <MenuItem key={col} value={col}>
                                     {columns[col].title || columns[col].dfid}
@@ -183,7 +193,7 @@ const TableSort = (props: TableSortProps) => {
         columns,
         onValidate,
         appliedSorts,
-        className = ""
+        className = "",
     } = props;
 
     const [showSort, setShowSort] = useState(false);

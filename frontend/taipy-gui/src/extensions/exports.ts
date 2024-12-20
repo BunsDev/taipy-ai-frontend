@@ -17,10 +17,10 @@ import FileSelector from "../components/Taipy/FileSelector";
 import Login from "../components/Taipy/Login";
 import Router from "../components/Router";
 import Table from "../components/Taipy/Table";
-import TableFilter from "../components/Taipy/TableFilter";
+import TableFilter, { FilterColumnDesc } from "../components/Taipy/TableFilter";
 import { FilterDesc } from "../components/Taipy/tableUtils";
-import TableSort, { SortDesc } from "../components/Taipy/TableSort";
-import {getComponentClassName} from "../components/Taipy/TaipyStyle";
+import TableSort, { SortColumnDesc, SortDesc } from "../components/Taipy/TableSort";
+import { getComponentClassName } from "../components/Taipy/TaipyStyle";
 import Metric from "../components/Taipy/Metric";
 import { useLovListMemo, LoV, LoVElt } from "../components/Taipy/lovUtils";
 import { LovItem } from "../utils/lov";
@@ -72,12 +72,14 @@ export {
 
 export type {
     ColumnDesc,
+    FilterColumnDesc,
     FilterDesc,
     LoV,
     LoVElt,
     LovItem,
     RowType,
     RowValue,
+    SortColumnDesc,
     SortDesc,
     TaipyStore as Store,
     TaipyState as State,

@@ -20,12 +20,20 @@ from taipy.common.config import Config
 from taipy.common.logger._taipy_logger import _TaipyLogger
 
 from .._entity._reload import _self_reload
-from ..reason import InvalidUploadFile, NoFileToDownload, NotAFile, ReasonCollection, UploadFileCanNotBeRead
+from ..common._utils import _normalize_path
+from ..reason import (
+    DataNodeEditInProgress,
+    InvalidUploadFile,
+    NoFileToDownload,
+    NotAFile,
+    ReasonCollection,
+    UploadFileCanNotBeRead,
+)
 from .data_node import DataNode
 from .data_node_id import Edit
 
 
-class _FileDataNodeMixin(object):
+class _FileDataNodeMixin:
     """Mixin class designed to handle file-based data nodes."""
 
     __EXTENSION_MAP = {"csv": "csv", "excel": "xlsx", "parquet": "parquet", "pickle": "p", "json": "json"}
@@ -60,13 +68,14 @@ class _FileDataNodeMixin(object):
     @_self_reload(DataNode._MANAGER_NAME)
     def path(self) -> str:
         """The path to the file data of the data node."""
-        return self._path
+        return _normalize_path(self._path)
 
     @path.setter
     def path(self, value) -> None:
-        self._path = value
-        self.properties[self._PATH_KEY] = value
-        self.properties[self._IS_GENERATED_KEY] = False
+        _path = _normalize_path(value)
+        self._path = _path
+        self.properties[self._PATH_KEY] = _path  # type: ignore[attr-defined]
+        self.properties[self._IS_GENERATED_KEY] = False  # type: ignore[attr-defined]
 
     def is_downloadable(self) -> ReasonCollection:
         """Check if the data node is downloadable.
@@ -100,53 +109,76 @@ class _FileDataNodeMixin(object):
 
         return ""
 
-    def _upload(self, path: str, upload_checker: Optional[Callable[[str, Any], bool]] = None) -> ReasonCollection:
+    def _upload(self,
+                path: str,
+                upload_checker: Optional[Callable[[str, Any], bool]] = None,
+                editor_id: Optional[str] = None,
+                comment: Optional[str] = None,
+                **kwargs: Any) -> ReasonCollection:
         """Upload a file data to the data node.
 
         Arguments:
             path (str): The path of the file to upload to the data node.
-            upload_checker (Optional[Callable[[str, Any], bool]]): A function to check if the upload is allowed.
-                The function takes the title of the upload data and the data itself as arguments and returns
-                True if the upload is allowed, otherwise False.
+            upload_checker (Optional[Callable[[str, Any], bool]]): A function to check if the
+                upload is allowed. The function takes the title of the upload data and the data
+                itself as arguments and returns True if the upload is allowed, otherwise False.
+            editor_id (Optional[str]): The ID of the user who is uploading the file.
+            comment (Optional[str]): A comment to add to the edit history of the data node.
+            **kwargs: Additional keyword arguments. These arguments are stored in the edit
+                history of the data node. In particular, an `editor_id` or a `comment` can be
+                passed. The `editor_id` is the ID of the user who is uploading the file, and the
+                `comment` is a comment to add to the edit history.
 
         Returns:
-            True if the upload was successful, otherwise False.
+            True if the upload was successful, the reasons why the upload was not successful
+            otherwise.
         """
         from ._data_manager_factory import _DataManagerFactory
 
-        reason_collection = ReasonCollection()
+        reasons = ReasonCollection()
+        if (editor_id
+            and self.edit_in_progress # type: ignore[attr-defined]
+            and self.editor_id != editor_id # type: ignore[attr-defined]
+            and (not self.editor_expiration_date # type: ignore[attr-defined]
+                 or self.editor_expiration_date > datetime.now())):  # type: ignore[attr-defined]
+            reasons._add_reason(self.id, DataNodeEditInProgress(self.id))  # type: ignore[attr-defined]
+            return reasons
 
-        upload_path = pathlib.Path(path)
-
+        up_path = pathlib.Path(path)
         try:
-            upload_data = self._read_from_path(str(upload_path))
+            upload_data = self._read_from_path(str(up_path))
         except Exception as err:
-            self.__logger.error(f"Error while uploading {upload_path.name} to data node {self.id}:")  # type: ignore[attr-defined]
+            self.__logger.error(f"Error uploading `{up_path.name}` to data "
+                                f"node `{self.id}`:")  # type: ignore[attr-defined]
             self.__logger.error(f"Error: {err}")
-            reason_collection._add_reason(self.id, UploadFileCanNotBeRead(upload_path.name, self.id))  # type: ignore[attr-defined]
-            return reason_collection
+            reasons._add_reason(self.id, UploadFileCanNotBeRead(up_path.name, self.id))  # type: ignore[attr-defined]
+            return reasons
 
         if upload_checker is not None:
             try:
-                can_upload = upload_checker(upload_path.name, upload_data)
+                can_upload = upload_checker(up_path.name, upload_data)
             except Exception as err:
                 self.__logger.error(
-                    f"Error while checking if {upload_path.name} can be uploaded to data node {self.id}"  # type: ignore[attr-defined]
-                    f" using the upload checker {upload_checker.__name__}: {err}"
-                )
+                    f"Error with the upload checker `{upload_checker.__name__}` "
+                    f"while checking `{up_path.name}` file for upload to the data "
+                    f"node `{self.id}`:") # type: ignore[attr-defined]
+                self.__logger.error(f"Error: {err}")
                 can_upload = False
 
             if not can_upload:
-                reason_collection._add_reason(self.id, InvalidUploadFile(upload_path.name, self.id))  # type: ignore[attr-defined]
-                return reason_collection
+                reasons._add_reason(self.id, InvalidUploadFile(up_path.name, self.id))  # type: ignore[attr-defined]
+                return reasons
 
-        shutil.copy(upload_path, self.path)
+        shutil.copy(up_path, self.path)
 
-        self.track_edit(timestamp=datetime.now())  # type: ignore[attr-defined]
+        self.track_edit(timestamp=datetime.now(),  # type: ignore[attr-defined]
+                        editor_id=editor_id,
+                        comment=comment, **kwargs)
         self.unlock_edit()  # type: ignore[attr-defined]
+
         _DataManagerFactory._build_manager()._set(self)  # type: ignore[arg-type]
 
-        return reason_collection
+        return reasons
 
     def _read_from_path(self, path: Optional[str] = None, **read_kwargs) -> Any:
         raise NotImplementedError

@@ -73,9 +73,12 @@ def job(task, job_id):
 @pytest.fixture
 def replace_in_memory_write_fct():
     default_write = InMemoryDataNode.write
+    default__write = InMemoryDataNode._write
     InMemoryDataNode.write = _error
+    InMemoryDataNode._write = _error
     yield
     InMemoryDataNode.write = default_write
+    InMemoryDataNode._write = default__write
 
 
 def _foo():

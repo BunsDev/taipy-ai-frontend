@@ -17,10 +17,11 @@ import DialogTitle from "@mui/material/DialogTitle";
 import MuiDialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
-import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
-import CloseIcon from "@mui/icons-material/Close";
+import Popover, { PopoverOrigin } from "@mui/material/Popover";
+import Tooltip from "@mui/material/Tooltip";
 import { SxProps, Theme } from "@mui/system";
+import CloseIcon from "@mui/icons-material/Close";
 
 import { createSendActionNameAction } from "../../context/taipyReducers";
 import TaipyRendered from "../pages/TaipyRendered";
@@ -41,6 +42,9 @@ interface DialogProps extends TaipyActiveProps {
     height?: string | number;
     width?: string | number;
     localAction?: (idx: number) => void;
+    refId?: string;
+    defaultRefId?: string;
+    popup?: boolean;
 }
 
 const closeSx: SxProps<Theme> = {
@@ -50,6 +54,29 @@ const closeSx: SxProps<Theme> = {
     alignSelf: "start",
 };
 const titleSx = { m: 0, p: 2, display: "flex", paddingRight: "0.1em" };
+
+const virtualElt = {
+    nodeType: 1,
+    getBoundingClientRect: () => {
+        const x = (document.body.offsetWidth - document.body.offsetLeft) / 2;
+        const y = (document.body.offsetHeight - document.body.offsetTop) / 2;
+        return {
+            x,
+            y,
+            width: 0,
+            height: 0,
+            top: y,
+            left: x,
+            bottom: y,
+            right: x,
+        };
+    },
+} as Element;
+
+const popoverAnchor: PopoverOrigin = {
+    vertical: "center",
+    horizontal: "center",
+};
 
 const Dialog = (props: DialogProps) => {
     const {
@@ -64,6 +91,7 @@ const Dialog = (props: DialogProps) => {
         partial,
         width,
         height,
+        popup = false,
     } = props;
     const dispatch = useDispatch();
     const module = useModule();
@@ -71,6 +99,7 @@ const Dialog = (props: DialogProps) => {
     const className = useClassNames(props.libClassName, props.dynamicClassName, props.className);
     const active = useDynamicProperty(props.active, props.defaultActive, true);
     const hover = useDynamicProperty(props.hoverText, props.defaultHoverText, undefined);
+    const refId = useDynamicProperty(props.refId, props.defaultRefId, undefined);
 
     const handleAction = useCallback(
         (evt: MouseEvent<HTMLElement>) => {
@@ -110,7 +139,22 @@ const Dialog = (props: DialogProps) => {
         return {};
     }, [width, height]);
 
-    return (
+    const getAnchorEl = useCallback(() => (refId && document.querySelector(refId)) || virtualElt, [refId]);
+
+    return popup ? (
+        <Popover
+            id={id}
+            onClose={handleAction}
+            open={open === undefined ? defaultOpen === "true" || defaultOpen === true : !!open}
+            className={`${className} ${getComponentClassName(props.children)}`}
+            sx={paperProps.sx}
+            anchorEl={getAnchorEl}
+            anchorOrigin={popoverAnchor}
+        >
+            {page ? <TaipyRendered path={"/" + page} partial={partial} fromBlock={true} /> : null}
+            {props.children}
+        </Popover>
+    ) : (
         <MuiDialog
             id={id}
             onClose={handleAction}
@@ -133,9 +177,9 @@ const Dialog = (props: DialogProps) => {
             </DialogContent>
             {labels.length ? (
                 <DialogActions>
-                    {labels.map((l, i) => (
+                    {labels.map((label, i) => (
                         <Button onClick={handleAction} disabled={!active} key={"label" + i} data-idx={i}>
-                            {l}
+                            {label}
                         </Button>
                     ))}
                 </DialogActions>

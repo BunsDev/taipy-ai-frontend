@@ -15,10 +15,11 @@ import typing
 import uuid
 from abc import abstractmethod
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 import networkx as nx
 
+from taipy.common.config import Config
 from taipy.common.config.common._validate_id import _validate_id
 from taipy.common.config.common.scope import Scope
 from taipy.common.logger._taipy_logger import _TaipyLogger
@@ -104,9 +105,9 @@ class DataNode(_Entity, _Labeled):
 
     _ID_PREFIX = "DATANODE"
     __ID_SEPARATOR = "_"
+    _MANAGER_NAME: str = "data"
     _logger = _TaipyLogger._get_logger()
     _REQUIRED_PROPERTIES: List[str] = []
-    _MANAGER_NAME: str = "data"
     _PATH_KEY = "path"
     __EDIT_TIMEOUT = 30
 
@@ -177,7 +178,7 @@ class DataNode(_Entity, _Labeled):
 
     @property
     def owner_id(self) -> Optional[str]:
-        """The identifier of the owner (sequence_id, scenario_id, cycle_id) or None."""
+        """The identifier of the owner (scenario_id, cycle_id or None)."""
         return self._owner_id
 
     @property  # type: ignore
@@ -211,7 +212,7 @@ class DataNode(_Entity, _Labeled):
     def last_edit_date(self) -> Optional[datetime]:
         """The date and time of the last modification."""
         last_modified_datetime = self._get_last_modified_datetime(self._properties.get(self._PATH_KEY, None))
-        if last_modified_datetime and last_modified_datetime > self._last_edit_date: # type: ignore
+        if last_modified_datetime and last_modified_datetime > self._last_edit_date:  # type: ignore
             return last_modified_datetime
         else:
             return self._last_edit_date
@@ -319,7 +320,7 @@ class DataNode(_Entity, _Labeled):
     @_self_reload(_MANAGER_NAME)
     def job_ids(self) -> List[JobId]:
         """List of the jobs having edited this data node."""
-        return [edit.get("job_id") for edit in self.edits if edit.get("job_id")]
+        return [job_id for edit in self.edits if (job_id := edit.get("job_id"))]
 
     @property
     def properties(self):
@@ -379,7 +380,7 @@ class DataNode(_Entity, _Labeled):
                     if (
                         isinstance(ancestor_node, DataNode)
                         and ancestor_node.last_edit_date
-                        and ancestor_node.last_edit_date > self.last_edit_date
+                        and ancestor_node.last_edit_date > cast(datetime, self.last_edit_date)
                     ):
                         return False
             return True
@@ -421,36 +422,55 @@ class DataNode(_Entity, _Labeled):
             )
             return None
 
-    def append(self, data, editor_id: Optional[str] = None, **kwargs: Any):
+    def append(self, data, editor_id: Optional[str] = None, comment: Optional[str] = None, **kwargs: Any):
         """Append some data to this data node.
 
         Arguments:
             data (Any): The data to write to this data node.
             editor_id (str): An optional identifier of the editor.
+            comment (str): An optional comment to attach to the edit document.
             **kwargs (Any): Extra information to attach to the edit document
                 corresponding to this write.
         """
         from ._data_manager_factory import _DataManagerFactory
-
+        if (editor_id
+            and self.edit_in_progress
+            and self.editor_id != editor_id
+            and (not self.editor_expiration_date or self.editor_expiration_date > datetime.now())):
+            raise DataNodeIsBeingEdited(self.id, self.editor_id)
         self._append(data)
-        self.track_edit(editor_id=editor_id, **kwargs)
+        self.track_edit(editor_id=editor_id, comment=comment, **kwargs)
         self.unlock_edit()
         _DataManagerFactory._build_manager()._set(self)
 
-    def write(self, data, job_id: Optional[JobId] = None, **kwargs: Any):
+    def write(self,
+              data,
+              job_id: Optional[JobId] = None,
+              editor_id: Optional[str] = None,
+              comment: Optional[str] = None,
+              **kwargs: Any):
         """Write some data to this data node.
+
+        once the data is written, the data node is unlocked and the edit is tracked.
 
         Arguments:
             data (Any): The data to write to this data node.
             job_id (JobId): An optional identifier of the job writing the data.
+            editor_id (str): An optional identifier of the editor writing the data.
+            comment (str): An optional comment to attach to the edit document.
             **kwargs (Any): Extra information to attach to the edit document
                 corresponding to this write.
         """
+        if (editor_id
+            and self.edit_in_progress
+            and self.editor_id != editor_id
+            and (not self.editor_expiration_date or self.editor_expiration_date > datetime.now())):
+            raise DataNodeIsBeingEdited(self.id, self.editor_id)
+        self._write(data)
+        self.track_edit(job_id=job_id, editor_id=editor_id, comment=comment, **kwargs)
+        self.unlock_edit()
         from ._data_manager_factory import _DataManagerFactory
 
-        self._write(data)
-        self.track_edit(job_id=job_id, **kwargs)
-        self.unlock_edit()
         _DataManagerFactory._build_manager()._set(self)
 
     def track_edit(self,
@@ -587,6 +607,35 @@ class DataNode(_Entity, _Labeled):
             None if there has been no `Edit` on this data node.
         """
         return self._edits[-1] if self._edits else None
+
+    def _get_rank(self, scenario_config_id: str) -> int:
+        """Get the data node rank for given scenario config.
+
+        The rank corresponds to the order of appearance of the data nodes in a scenario config DAG.
+
+        Arguments:
+            scenario_config_id (str): The identifier of the scenario config used to
+                get the data node rank.
+
+        Returns:
+            The int value representing the rank of the data node config in the scenario config DAG.
+            If the scenario config is None or an empty string, 0xfffb is returned.<br/>
+            If the data node config is not found, 0xfffd is returned. This case cannot
+            happen in a normal situation.<br/>
+            If the data node config has no precomputed ranks, 0xfffe is returned. This case
+            cannot happen in a normal situation.<br/>
+            If the data node config is not part of the scenario config, 0xfffc is returned as an infinite rank.
+        """
+        if not scenario_config_id:
+            return 0xfffb
+        dn_config = Config.data_nodes.get(self._config_id, None)
+        if not dn_config:
+            self._logger.error(f"Data node config `{self.config_id}` for data node `{self.id}` is not found.")
+            return 0xfffd
+        if not dn_config._ranks:
+            self._logger.error(f"Data node config `{self.config_id}` for data node `{self.id}` has no rank.")
+            return 0xfffe
+        return dn_config._ranks.get(scenario_config_id, 0xfffc)
 
     @abstractmethod
     def _read(self):

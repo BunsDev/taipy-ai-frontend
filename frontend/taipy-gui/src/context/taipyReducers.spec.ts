@@ -14,10 +14,10 @@
 import "@testing-library/jest-dom";
 import {
     addRows,
-    AlertMessage,
+    NotificationMessage,
     BlockMessage,
     createAckAction,
-    createAlertAction,
+    createNotificationAction,
     createBlockAction,
     createDownloadAction,
     createIdAction,
@@ -43,6 +43,7 @@ import {
     TaipyBaseAction,
     taipyReducer,
     Types,
+    TaipyState,
 } from "./taipyReducers";
 import { WsMessage } from "./wsUtils";
 import { changeFavicon, getLocalStorageValue, IdMessage } from "./utils";
@@ -50,7 +51,7 @@ import { Socket } from "socket.io-client";
 import { Dispatch } from "react";
 import { parseData } from "../utils/dataFormat";
 import * as wsUtils from "./wsUtils";
-import { nanoid } from 'nanoid';
+import { nanoid } from "nanoid";
 
 jest.mock("./utils", () => ({
     ...jest.requireActual("./utils"),
@@ -85,14 +86,14 @@ describe("reducer", () => {
             } as TaipyBaseAction).locations
         ).toBeDefined();
     });
-    it("set alert", async () => {
+    it("set notification", async () => {
         expect(
             taipyReducer({ ...INITIAL_STATE }, {
-                type: "SET_ALERT",
+                type: "SET_NOTIFICATION",
                 atype: "i",
                 message: "message",
                 system: "system",
-            } as TaipyBaseAction).alerts
+            } as TaipyBaseAction).notifications
         ).toHaveLength(1);
     });
     it("set show block", async () => {
@@ -201,12 +202,20 @@ describe("reducer", () => {
             } as TaipyBaseAction).data.partial
         ).toBeUndefined();
     });
-    it("creates an alert action", () => {
-        expect(createAlertAction({ atype: "I", message: "message" } as AlertMessage).type).toBe("SET_ALERT");
-        expect(createAlertAction({ atype: "err", message: "message" } as AlertMessage).atype).toBe("error");
-        expect(createAlertAction({ atype: "Wa", message: "message" } as AlertMessage).atype).toBe("warning");
-        expect(createAlertAction({ atype: "sUc", message: "message" } as AlertMessage).atype).toBe("success");
-        expect(createAlertAction({ atype: "  ", message: "message" } as AlertMessage).atype).toBe("");
+    it("creates a notification action", () => {
+        expect(createNotificationAction({ atype: "I", message: "message" } as NotificationMessage).type).toBe(
+            "SET_NOTIFICATION"
+        );
+        expect(createNotificationAction({ atype: "err", message: "message" } as NotificationMessage).atype).toBe(
+            "error"
+        );
+        expect(createNotificationAction({ atype: "Wa", message: "message" } as NotificationMessage).atype).toBe(
+            "warning"
+        );
+        expect(createNotificationAction({ atype: "sUc", message: "message" } as NotificationMessage).atype).toBe(
+            "success"
+        );
+        expect(createNotificationAction({ atype: "  ", message: "message" } as NotificationMessage).atype).toBe("");
     });
 });
 
@@ -543,7 +552,7 @@ describe("createSendUpdateAction function", () => {
 describe("taipyReducer function", () => {
     it("should not change state for SOCKET_CONNECTED action if isSocketConnected is already true", () => {
         const action = { type: Types.SocketConnected };
-        const initialState = { ...INITIAL_STATE, isSocketConnected: true };
+        const initialState: TaipyState = { ...INITIAL_STATE, isSocketConnected: true };
         const newState = taipyReducer(initialState, action);
         const expectedState = { ...initialState, isSocketConnected: true };
         expect(newState).toEqual(expectedState);
@@ -569,9 +578,9 @@ describe("taipyReducer function", () => {
         const newState = taipyReducer({ ...INITIAL_STATE }, action);
         expect(newState.locations).toEqual(action.payload.value);
     });
-    it("should handle SET_ALERT action", () => {
+    it("should handle SET_NOTIFICATION action", () => {
         const action = {
-            type: Types.SetAlert,
+            type: Types.SetNotification,
             atype: "error",
             message: "some error message",
             system: true,
@@ -579,7 +588,7 @@ describe("taipyReducer function", () => {
             notificationId: nanoid(),
         };
         const newState = taipyReducer({ ...INITIAL_STATE }, action);
-        expect(newState.alerts).toContainEqual({
+        expect(newState.notifications).toContainEqual({
             atype: action.atype,
             message: action.message,
             system: action.system,
@@ -587,57 +596,89 @@ describe("taipyReducer function", () => {
             notificationId: action.notificationId,
         });
     });
-    it("should handle DELETE_ALERT action", () => {
+    it("should handle DELETE_NOTIFICATION action", () => {
         const notificationId1 = "id-1234";
         const notificationId2 = "id-5678";
-        const initialState = {
+        const initialState: TaipyState = {
             ...INITIAL_STATE,
-            alerts: [
-                { atype: "error", message: "First Alert", system: true, duration: 5000, notificationId: notificationId1 },
-                { atype: "warning", message: "Second Alert", system: false, duration: 3000, notificationId: notificationId2 },
+            notifications: [
+                {
+                    atype: "error",
+                    message: "First Notification",
+                    system: true,
+                    duration: 5000,
+                    notificationId: notificationId1,
+                },
+                {
+                    atype: "warning",
+                    message: "Second Notification",
+                    system: false,
+                    duration: 3000,
+                    notificationId: notificationId2,
+                },
             ],
         };
-        const action = { type: Types.DeleteAlert, notificationId: notificationId1 };
+        const action = { type: Types.DeleteNotification, notificationId: notificationId1 };
         const newState = taipyReducer(initialState, action);
-        expect(newState.alerts).toEqual([{ atype: "warning", message: "Second Alert", system: false, duration: 3000, notificationId: notificationId2 }]);
+        expect(newState.notifications).toEqual([
+            {
+                atype: "warning",
+                message: "Second Notification",
+                system: false,
+                duration: 3000,
+                notificationId: notificationId2,
+            },
+        ]);
     });
-    it('should not modify state if DELETE_ALERT does not match any notificationId', () => {
+    it("should not modify state if DELETE_NOTIFICATION does not match any notificationId", () => {
         const notificationId1 = "id-1234";
         const notificationId2 = "id-5678";
         const nonExistentId = "000000";
-        const initialState = {
+        const initialState: TaipyState = {
             ...INITIAL_STATE,
-            alerts: [
-                { atype: "error", message: "First Alert", system: true, duration: 5000, notificationId: notificationId1 },
-                { atype: "warning", message: "Second Alert", system: false, duration: 3000, notificationId: notificationId2 },
+            notifications: [
+                {
+                    atype: "error",
+                    message: "First Notification",
+                    system: true,
+                    duration: 5000,
+                    notificationId: notificationId1,
+                },
+                {
+                    atype: "warning",
+                    message: "Second Notification",
+                    system: false,
+                    duration: 3000,
+                    notificationId: notificationId2,
+                },
             ],
         };
-        const action = { type: Types.DeleteAlert, notificationId: nonExistentId };
+        const action = { type: Types.DeleteNotification, notificationId: nonExistentId };
         const newState = taipyReducer(initialState, action);
         expect(newState).toEqual(initialState);
     });
-    it("should not modify state if no alerts are present", () => {
-        const initialState = { ...INITIAL_STATE, alerts: [] };
-        const action = { type: Types.DeleteAlert };
+    it("should not modify state if no notification are present", () => {
+        const initialState: TaipyState = { ...INITIAL_STATE, notifications: [] };
+        const action = { type: Types.DeleteNotification };
         const newState = taipyReducer(initialState, action);
         expect(newState).toEqual(initialState);
     });
-    it("should handle DELETE_ALERT action even when no notificationId is passed", () => {
+    it("should handle DELETE_NOTIFICATION action even when no notificationId is passed", () => {
         const notificationId1 = "id-1234";
         const notificationId2 = "id-5678";
 
-        const initialState = {
+        const initialState: TaipyState = {
             ...INITIAL_STATE,
-            alerts: [
+            notifications: [
                 {
-                    message: "alert1",
+                    message: "Notification1",
                     atype: "type1",
                     system: true,
                     duration: 5000,
                     notificationId: notificationId1,
                 },
                 {
-                    message: "alert2",
+                    message: "Notification2",
                     atype: "type2",
                     system: false,
                     duration: 3000,
@@ -645,11 +686,11 @@ describe("taipyReducer function", () => {
                 },
             ],
         };
-        const action = { type: Types.DeleteAlert, notificationId: notificationId1 };
+        const action = { type: Types.DeleteNotification, notificationId: notificationId1 };
         const newState = taipyReducer(initialState, action);
-        expect(newState.alerts).toEqual([
+        expect(newState.notifications).toEqual([
             {
-                message: "alert2",
+                message: "Notification2",
                 atype: "type2",
                 system: false,
                 duration: 3000,
@@ -658,7 +699,7 @@ describe("taipyReducer function", () => {
         ]);
     });
     it("should handle SET_BLOCK action", () => {
-        const initialState = { ...INITIAL_STATE, block: undefined };
+        const initialState: TaipyState = { ...INITIAL_STATE, block: undefined };
         const action = {
             type: Types.SetBlock,
             noCancel: false,
@@ -675,7 +716,7 @@ describe("taipyReducer function", () => {
         });
     });
     it("should handle NAVIGATE action", () => {
-        const initialState = {
+        const initialState: TaipyState = {
             ...INITIAL_STATE,
             navigateTo: undefined,
             navigateParams: undefined,
@@ -696,31 +737,31 @@ describe("taipyReducer function", () => {
         expect(newState.navigateForce).toEqual(true);
     });
     it("should handle CLIENT_ID action", () => {
-        const initialState = { ...INITIAL_STATE, id: "oldId" };
+        const initialState: TaipyState = { ...INITIAL_STATE, id: "oldId" };
         const action = { type: Types.ClientId, id: "newId" };
         const newState = taipyReducer(initialState, action);
         expect(newState.id).toEqual("newId");
     });
     it("should handle ACKNOWLEDGEMENT action", () => {
-        const initialState = { ...INITIAL_STATE, ackList: ["ack1", "ack2"] };
+        const initialState: TaipyState = { ...INITIAL_STATE, ackList: ["ack1", "ack2"] };
         const action = { type: Types.Acknowledgement, id: "ack1" };
         const newState = taipyReducer(initialState, action);
         expect(newState.ackList).toEqual(["ack2"]);
     });
     it("should handle SET_MENU action", () => {
-        const initialState = { ...INITIAL_STATE, menu: {} };
+        const initialState: TaipyState = { ...INITIAL_STATE, menu: {} };
         const action = { type: Types.SetMenu, menu: { menu1: "item1", menu2: "item2" } };
         const newState = taipyReducer(initialState, action);
         expect(newState.menu).toEqual({ menu1: "item1", menu2: "item2" });
     });
     it("should handle DOWNLOAD_FILE action", () => {
-        const initialState = { ...INITIAL_STATE, download: undefined };
+        const initialState: TaipyState = { ...INITIAL_STATE, download: undefined };
         const action = { type: Types.DownloadFile, content: "fileContent", name: "fileName", onAction: "fileAction" };
         const newState = taipyReducer(initialState, action);
         expect(newState.download).toEqual({ content: "fileContent", name: "fileName", onAction: "fileAction" });
     });
     it("should handle PARTIAL action", () => {
-        const initialState = { ...INITIAL_STATE, data: { test: false } };
+        const initialState: TaipyState = { ...INITIAL_STATE, data: { test: false } };
         const actionCreate = {
             type: Types.Partial,
             name: "test",
@@ -738,7 +779,7 @@ describe("taipyReducer function", () => {
         expect(newState.data.test).toBeUndefined();
     });
     it("should handle MULTIPLE_UPDATE action", () => {
-        const initialState = { ...INITIAL_STATE, data: { test1: false, test2: false } };
+        const initialState: TaipyState = { ...INITIAL_STATE, data: { test1: false, test2: false } };
         const action = {
             type: Types.MultipleUpdate,
             payload: [
@@ -757,13 +798,13 @@ describe("taipyReducer function", () => {
         expect(newState.data.test2).toEqual(true);
     });
     it("should handle SetTimeZone action with fromBackend true", () => {
-        const initialState = { ...INITIAL_STATE, timeZone: "oldTimeZone" };
+        const initialState: TaipyState = { ...INITIAL_STATE, timeZone: "oldTimeZone" };
         const action = { type: Types.SetTimeZone, payload: { timeZone: "newTimeZone", fromBackend: true } };
         const newState = taipyReducer(initialState, action);
         expect(newState.timeZone).toEqual("newTimeZone");
     });
     it("should handle SetTimeZone action with fromBackend false and localStorage value", () => {
-        const initialState = { ...INITIAL_STATE, timeZone: "oldTimeZone" };
+        const initialState: TaipyState = { ...INITIAL_STATE, timeZone: "oldTimeZone" };
         const localStorageTimeZone = "localStorageTimeZone";
         localStorage.setItem("timeZone", localStorageTimeZone);
         const action = { type: Types.SetTimeZone, payload: { timeZone: "newTimeZone", fromBackend: false } };
@@ -772,13 +813,13 @@ describe("taipyReducer function", () => {
         localStorage.removeItem("timeZone");
     });
     it("should handle SetTimeZone action with fromBackend false and no localStorage value", () => {
-        const initialState = { ...INITIAL_STATE, timeZone: "oldTimeZone" };
+        const initialState: TaipyState = { ...INITIAL_STATE, timeZone: "oldTimeZone" };
         const action = { type: Types.SetTimeZone, payload: { timeZone: "newTimeZone", fromBackend: false } };
         const newState = taipyReducer(initialState, action);
         expect(newState.timeZone).toEqual("UTC");
     });
     it("should handle SetTimeZone action with no change in timeZone", () => {
-        const initialState = { ...INITIAL_STATE, timeZone: "oldTimeZone" };
+        const initialState: TaipyState = { ...INITIAL_STATE, timeZone: "oldTimeZone" };
         const action = { type: Types.SetTimeZone, payload: { timeZone: "oldTimeZone", fromBackend: true } };
         const newState = taipyReducer(initialState, action);
         expect(newState).toEqual(initialState);
@@ -888,7 +929,7 @@ describe("messageToAction function", () => {
         expect(result).toEqual(expected);
     });
     it('should call createAlertAction if message type is "AL"', () => {
-        const message: WsMessage & Partial<AlertMessage> = {
+        const message: WsMessage & Partial<NotificationMessage> = {
             type: "AL",
             atype: "I",
             name: "someName",
@@ -899,7 +940,7 @@ describe("messageToAction function", () => {
             ack_id: "someAckId",
         };
         const result = messageToAction(message);
-        const expectedResult = createAlertAction(message as unknown as AlertMessage);
+        const expectedResult = createNotificationAction(message as unknown as NotificationMessage);
         expect(result).toEqual(expectedResult);
     });
     it('should call createBlockAction if message type is "BL"', () => {

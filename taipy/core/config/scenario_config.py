@@ -13,6 +13,8 @@ from collections import defaultdict
 from copy import copy
 from typing import Any, Callable, Dict, List, Optional, Union
 
+import networkx as nx
+
 from taipy.common.config import Config
 from taipy.common.config._config import _Config
 from taipy.common.config.common._template_handler import _TemplateHandler as _tpl
@@ -33,7 +35,6 @@ class ScenarioConfig(Section):
     _TASKS_KEY = "tasks"
     _ADDITIONAL_DATA_NODES_KEY = "additional_data_nodes"
     _FREQUENCY_KEY = "frequency"
-    _SEQUENCES_KEY = "sequences"
     _COMPARATOR_KEY = "comparators"
 
     frequency: Optional[Frequency]
@@ -86,6 +87,7 @@ class ScenarioConfig(Section):
                 else:
                     self.comparators[_validate_id(k)].append(v)
         super().__init__(id, **properties)
+        self.__build_datanode_configs_ranks()
 
     def __copy__(self):
         comp = None if self.comparators is None else self.comparators
@@ -180,6 +182,55 @@ class ScenarioConfig(Section):
         """
         return ScenarioConfig(cls._DEFAULT_KEY, [], [], None, {})
 
+    def draw(self, file_path: Optional[str] = None) -> None:
+        """
+        Export the scenario configuration graph as a PNG file.
+
+        This function uses the `matplotlib` library to draw the scenario configuration graph.
+        `matplotlib` must be installed independently of `taipy` as it is not a dependency.
+        If `matplotlib` is not installed, the function will log an error message, and do nothing.
+
+        Arguments:
+            file_path (Optional[str]): The path to save the PNG file.
+                If not provided, the file will be saved with the scenario configuration id.
+        """
+        from importlib import util
+
+        from taipy.common.logger._taipy_logger import _TaipyLogger
+        logger = _TaipyLogger._get_logger()
+
+        if not util.find_spec("matplotlib"):
+            logger.error("Cannot draw the scenario configuration as `matplotlib` is not installed.")
+            return
+        import matplotlib.pyplot as plt
+
+        from taipy.core._entity._dag import _DAG
+        graph = self.__build_nx_dag()
+        positioned_nodes = _DAG(graph).nodes.values()
+        pos = {node.entity: (node.x, node.y) for node in positioned_nodes}
+        labls = {node.entity: node.entity.id for node in positioned_nodes}
+
+        # Draw the graph
+        plt.figure(figsize=(10, 10))
+        nx.draw_networkx_nodes(graph, pos,
+                               nodelist=[node for node in graph.nodes if isinstance(node, DataNodeConfig)],
+                               node_color="skyblue",
+                               node_shape="s",
+                               node_size=2000)
+        nx.draw_networkx_nodes(graph, pos,
+                               nodelist=[node for node in graph.nodes if isinstance(node, TaskConfig)],
+                               node_color="orange",
+                               node_shape="D",
+                               node_size=2000)
+        nx.draw_networkx_labels(graph, pos, labels=labls)
+        nx.draw_networkx_edges(graph, pos, node_size=2000, edge_color="black", arrowstyle="->", arrowsize=25)
+
+        # Save the graph as a PNG file
+        path = file_path or f"{self.id}.png"
+        plt.savefig(path)
+        plt.close()  # Close the plot to avoid display
+        logger.info(f"The graph image of the scenario configuration `{self.id}` is exported: {path}")
+
     def _clean(self):
         self._tasks = []
         self._additional_data_nodes = []
@@ -199,7 +250,8 @@ class ScenarioConfig(Section):
         }
 
     @classmethod
-    def _from_dict(cls, as_dict: Dict[str, Any], id: str, config: Optional[_Config] = None) -> "ScenarioConfig":  # type: ignore
+    def _from_dict(cls, as_dict: Dict[str, Any], id: str,
+                   config: Optional[_Config] = None) -> "ScenarioConfig":  # type: ignore
         as_dict.pop(cls._ID_KEY, id)
 
         tasks = cls.__get_task_configs(as_dict.pop(cls._TASKS_KEY, []), config)
@@ -223,34 +275,6 @@ class ScenarioConfig(Section):
             sequences=sequences,
             **as_dict,
         )
-
-    def __get_all_unique_data_nodes(self) -> List[DataNodeConfig]:
-        data_node_configs = set(self._additional_data_nodes)
-        for task in self._tasks:
-            data_node_configs.update(task.inputs)
-            data_node_configs.update(task.outputs)
-
-        return list(data_node_configs)
-
-    @staticmethod
-    def __get_task_configs(task_config_ids: List[str], config: Optional[_Config]):
-        task_configs = set()
-        if config:
-            if task_config_section := config._sections.get(TaskConfig.name):
-                for task_config_id in task_config_ids:
-                    if task_config := task_config_section.get(task_config_id, None):
-                        task_configs.add(task_config)
-        return list(task_configs)
-
-    @staticmethod
-    def __get_additional_data_node_configs(additional_data_node_ids: List[str], config: Optional[_Config]):
-        additional_data_node_configs = set()
-        if config:
-            if data_node_config_section := config._sections.get(DataNodeConfig.name):
-                for additional_data_node_id in additional_data_node_ids:
-                    if additional_data_node_config := data_node_config_section.get(additional_data_node_id):
-                        additional_data_node_configs.add(additional_data_node_config)
-        return list(additional_data_node_configs)
 
     def _update(self, as_dict: Dict[str, Any], default_section=None):
         self._tasks = as_dict.pop(self._TASKS_KEY, self._tasks)
@@ -305,7 +329,7 @@ class ScenarioConfig(Section):
                 corresponds to the data node configuration id. During the scenarios'
                 comparison, each comparator is applied to all the data nodes instantiated from
                 the data node configuration attached to the comparator. See
-                `(taipy.)compare_scenarios()^` more more details.
+                `(taipy.)compare_scenarios()^` more details.
             sequences (Optional[Dict[str, List[TaskConfig]]]): Dictionary of sequence descriptions.
                 The default value is None.
             **properties (dict[str, any]): A keyworded variable length list of additional arguments.
@@ -355,7 +379,7 @@ class ScenarioConfig(Section):
                 corresponds to the data node configuration id. During the scenarios'
                 comparison, each comparator is applied to all the data nodes instantiated from
                 the data node configuration attached to the comparator. See
-                `taipy.compare_scenarios()^` more more details.
+                `taipy.compare_scenarios()^` more details.
             sequences (Optional[Dict[str, List[TaskConfig]]]): Dictionary of sequences. The default value is None.
             **properties (dict[str, any]): A keyworded variable length list of additional arguments.
 
@@ -373,3 +397,63 @@ class ScenarioConfig(Section):
         )
         Config._register(section)
         return Config.sections[ScenarioConfig.name][_Config.DEFAULT_KEY]
+
+    def __get_all_unique_data_nodes(self) -> List[DataNodeConfig]:
+        data_node_configs = set(self._additional_data_nodes)
+        for task in self._tasks:
+            data_node_configs.update(task.inputs)
+            data_node_configs.update(task.outputs)
+
+        return list(data_node_configs)
+
+    @staticmethod
+    def __get_task_configs(task_config_ids: List[str], config: Optional[_Config]):
+        task_configs = set()
+        if config:
+            if task_config_section := config._sections.get(TaskConfig.name):
+                for task_config_id in task_config_ids:
+                    if task_config := task_config_section.get(task_config_id, None):
+                        task_configs.add(task_config)
+        return list(task_configs)
+
+    @staticmethod
+    def __get_additional_data_node_configs(additional_data_node_ids: List[str], config: Optional[_Config]):
+        additional_data_node_configs = set()
+        if config:
+            if data_node_config_section := config._sections.get(DataNodeConfig.name):
+                for additional_data_node_id in additional_data_node_ids:
+                    if additional_data_node_config := data_node_config_section.get(additional_data_node_id):
+                        additional_data_node_configs.add(additional_data_node_config)
+        return list(additional_data_node_configs)
+
+    def __build_nx_dag(self) -> nx.DiGraph:
+        g = nx.DiGraph()
+        for task in set(self.tasks):
+            if has_input := task.inputs:
+                for predecessor in task.inputs:
+                    g.add_edges_from([(predecessor, task)])
+            if has_output := task.outputs:
+                for successor in task.outputs:
+                    g.add_edges_from([(task, successor)])
+            if not has_input and not has_output:
+                g.add_node(task)
+        return g
+
+    def __build_datanode_configs_ranks(self):
+        # build the DAG
+        dag = self.__build_nx_dag()
+        # Remove tasks with no input
+        to_remove = [t for t, degree in dict(dag.in_degree).items() if degree == 0 and isinstance(t, TaskConfig)]
+        dag.remove_nodes_from(to_remove)
+        # get data nodes in the dag
+        dn_cfgs = [nodes for nodes in nx.topological_generations(dag) if (DataNodeConfig in (type(n) for n in nodes))]
+
+        # assign ranks to data nodes configs starting from 1
+        rank = 1
+        for same_rank_datanode_cfgs in dn_cfgs:
+            for dn_cfg in same_rank_datanode_cfgs:
+                dn_cfg._ranks[self.id] = rank
+            rank += 1
+        # additional data nodes (not in the dag) have a rank of 0
+        for add_dn_cfg in self._additional_data_nodes:
+            add_dn_cfg._ranks[self.id] = 0

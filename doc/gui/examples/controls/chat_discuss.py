@@ -25,7 +25,7 @@ from taipy.gui import Gui, Icon
 from taipy.gui.gui_actions import navigate, notify
 
 username = ""
-users: list[Union[str, Icon]] = []
+users: list[tuple[str, Union[str, Icon]]] = []
 messages: list[tuple[str, str, str, Optional[str]]] = []
 
 Gui.add_shared_variables("messages", "users")
@@ -82,4 +82,6 @@ discuss_page = """
 """
 
 pages = {"register": register_page, "discuss": discuss_page}
-gui = Gui(pages=pages).run(title="Chat - Discuss")
+
+if __name__ == "__main__":
+    gui = Gui(pages=pages).run(title="Chat - Discuss")

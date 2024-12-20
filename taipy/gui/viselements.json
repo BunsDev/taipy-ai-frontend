@@ -23,7 +23,7 @@
                     {
                         "name": "mode",
                         "type": "str",
-                        "doc": "Define the way the text is processed:\n<ul><li>&quot;raw&quot;: synonym for setting the <i>raw</i> property to True</li><li>&quot;pre&quot;: keeps spaces and new lines</li><li>&quot;markdown&quot; or &quot;md&quot;: basic support for Markdown</li><li>&quot;latex&quot;: LaTe&chi; support</li>"
+                        "doc": "Define the way the text is processed:\n<ul><li>&quot;raw&quot;: synonym for setting the <i>raw</i> property to True</li><li>&quot;pre&quot;: keeps spaces and new lines</li><li>&quot;markdown&quot; or &quot;md&quot;: basic support for Markdown</li><li>&quot;latex&quot;: LaTe&chi; support</li></ul>"
                     },
                     {
                         "name": "format",
@@ -34,7 +34,7 @@
                         "name": "width",
                         "type": "Union[str,int]",
                         "default_value": "None",
-                        "doc": "The width of the element."
+                        "doc": "The width of the text element, in CSS units."
                     }
                 ]
             }
@@ -53,6 +53,18 @@
                         "type": "dynamic(Union[str,Icon])",
                         "default_value": "\"\"",
                         "doc": "The label displayed in the button."
+                    },
+                    {
+                        "name": "size",
+                        "type": "str",
+                        "default_value": "\"medium\"",
+                        "doc": "The size of the button. Valid values: \"small\", \"medium\", or \"large\"."
+                    },
+                    {
+                        "name": "variant",
+                        "type": "str",
+                        "default_value": "\"outlined\"",
+                        "doc": "The variant of the button. Valid values: \"contained\", \"outlined\", or \"text\"."
                     },
                     {
                         "name": "on_action",
@@ -102,31 +114,37 @@
                         "name": "password",
                         "type": "bool",
                         "default_value": "False",
-                        "doc": "If True, the text is obscured: all input characters are displayed as an asterisk ('*')."
+                        "doc": "If True, the text is obscured, and all characters are displayed as asterisks ('*').<br/>This can be useful for sensitive information such as passwords."
                     },
                     {
                         "name": "label",
                         "type": "str",
                         "default_value": "None",
-                        "doc": "The label associated with the input."
+                        "doc": "The label associated with the input field.<br/>This provides context to the user and improves accessibility."
                     },
                     {
                         "name": "multiline",
                         "type": "bool",
                         "default_value": "False",
-                        "doc": "If True, the text is presented as a multi line input."
+                        "doc": "If True, the input is rendered as a multi-line text area<br/>The default behavior is a single-line input."
                     },
                     {
                         "name": "lines_shown",
                         "type": "int",
                         "default_value": "5",
-                        "doc": "The number of lines shown in the input control, when multiline is True."
+                        "doc": "The number of lines displayed in the input control when multiline is True."
                     },
                     {
                         "name": "type",
                         "type": "str",
                         "default_value": "\"text\"",
-                        "doc": "The type of generated input HTML element, as defined in [HTML input types](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#input_types).<br/>This value forces certain values to be entered and can be set to \"text\", \"tel\", \"email\", \"url\"..., among other choices."
+                        "doc": "The type of input element, as per <a href=\"https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#input_types\">HTML input types</a>.<br/>This property enforces specific input formats where applicable. Supported values include \"text\", \"tel\", \"email\", \"url\", etc."
+                    },
+                    {
+                        "name": "action_on_blur",
+                        "type": "bool",
+                        "default_value": "False",
+                        "doc": "If True, the <code>on_action</code> callback is triggered when the input control looses keyboard focus (e.g., when the user presses the Tab key). When this happens, the key name for the event (set in the <i>args</i> property of the <i>payload</i> parameter to the callback function) is set to \"Tab\"."
                     }
                 ]
             }
@@ -150,29 +168,35 @@
                         "name": "label",
                         "type": "str",
                         "default_value": "None",
-                        "doc": "The label associated with the input."
+                        "doc": "The label associated with the number field.<br/>This provides context to the user and improves accessibility."
                     },
                     {
                         "name": "step",
                         "type": "dynamic(Union[int,float])",
                         "default_value": "1",
-                        "doc": "The amount by which the value is incremented or decremented when the user clicks one of the arrow buttons."
+                        "doc": "The increment or decrement applied to the value when the user clicks the arrow buttons."
                     },
                     {
                         "name": "step_multiplier",
                         "type": "dynamic(Union[int,float])",
                         "default_value": "10",
-                        "doc": "A factor that multiplies <i>step</i> when the user presses the Shift key while clicking one of the arrow buttons."
+                        "doc": "The factor by which the step value is multiplied when the user holds the Shift key while clicking the arrow buttons."
                     },
                     {
                         "name": "min",
                         "type": "dynamic(Union[int,float])",
-                        "doc": "The minimum value to accept for this input."
+                        "doc": "The minimum acceptable value.<br/>Values below this threshold are invalid."
                     },
                     {
                         "name": "max",
                         "type": "dynamic(Union[int,float])",
-                        "doc": "The maximum value to accept for this input."
+                        "doc": "The maximum acceptable value.<br/>Values above this threshold are invalid."
+                    },
+                    {
+                        "name": "action_on_blur",
+                        "type": "bool",
+                        "default_value": "False",
+                        "doc": "If True, the <code>on_action</code> callback is triggered when the number control looses keyboard focus (e.g., when the user presses the Tab key). When this happens, the key name for the event (set in the <i>args</i> property of the <i>payload</i> parameter to the callback function) is set to \"Tab\"."
                     }
                 ]
             }
@@ -224,30 +248,30 @@
                         "name": "continuous",
                         "type": "bool",
                         "default_value": "True",
-                        "doc": "If set to False, the control emits an <tt>on_change</tt> notification only when the mouse button is released, otherwise notifications are emitted during the cursor movements.<br/>If <i>lov</i> is defined, the default value is False."
+                        "doc": "If set to False, the control emits an <code>on_change</code> notification only when the mouse button is released, otherwise notifications are emitted during the cursor movements.<br/>If <i>lov</i> is defined, the default value is False."
                     },
                     {
                         "name": "change_delay",
                         "type": "int",
                         "default_value": "<i>App config</i>",
-                        "doc": "Minimum time between triggering two <tt>on_change</tt> callbacks.<br/>The default value is defined at the application configuration level by the <strong>change_delay</strong> configuration option. if None or 0, there's no delay."
+                        "doc": "Minimum time between triggering two <code>on_change</code> callbacks.<br/>The default value is defined at the application configuration level by the <strong>change_delay</strong> configuration option. if None or 0, there's no delay."
                     },
                     {
                         "name": "width",
                         "type": "str",
                         "default_value": "\"300px\"",
-                        "doc": "The width of this slider, in CSS units."
+                        "doc": "The width of the slider, in CSS units."
                     },
                     {
                         "name": "height",
                         "type": "str",
-                        "doc": "The height of this slider, in CSS units.<br/>It defaults to the value of <i>width</i> when using the vertical orientation."
+                        "doc": "The height of the slider, in CSS units.<br/>It defaults to the value of <i>width</i> when using the vertical orientation."
                     },
                     {
                         "name": "orientation",
                         "type": "str",
                         "default_value": "\"horizontal\"",
-                        "doc": "The orientation of this slider.<br/>Valid values are \"horizontal\" or \"vertical\"."
+                        "doc": "The orientation of the slider.<br/>Valid values are \"horizontal\" or \"vertical\"."
                     }
                 ]
             }
@@ -576,7 +600,7 @@
                     {
                         "name": "title",
                         "type": "str",
-                        "doc": "The title of this chart control."
+                        "doc": "The title of the chart control."
                     },
                     {
                         "name": "render",
@@ -647,7 +671,7 @@
                     {
                         "name": "selected_marker",
                         "type": "indexed(dict[str, Any])",
-                        "doc": "The type of markers used for selected points in the indicated trace.<br/>See <a href=\"https://plotly.com/javascript/reference/scatter/#scatter-selected-marker\">selected marker for more details."
+                        "doc": "The type of markers used for selected points in the indicated trace.<br/>See <a href=\"https://plotly.com/javascript/reference/scatter/#scatter-selected-marker\">selected marker for more details.</a>"
                     },
                     {
                         "name": "layout",
@@ -688,12 +712,12 @@
                         "name": "width",
                         "type": "Union[str,int,float]",
                         "default_value": "\"100%\"",
-                        "doc": "The width of this chart, in CSS units."
+                        "doc": "The width of the chart, in CSS units."
                     },
                     {
                         "name": "height",
                         "type": "Union[str,int,float]",
-                        "doc": "The height of this chart, in CSS units."
+                        "doc": "The height of the chart, in CSS units."
                     },
                     {
                         "name": "template",
@@ -883,13 +907,13 @@
                         "name": "width",
                         "type": "str",
                         "default_value": "\"100%\"",
-                        "doc": "The width of this table control, in CSS units."
+                        "doc": "The width of the table control, in CSS units."
                     },
                     {
                         "name": "height",
                         "type": "str",
                         "default_value": "\"80vh\"",
-                        "doc": "The height of this table control, in CSS units."
+                        "doc": "The height of the table control, in CSS units."
                     },
                     {
                         "name": "filter",
@@ -931,7 +955,7 @@
                         "name": "on_edit",
                         "type": "Union[bool, Callable]",
                         "default_value": "<i>default implementation</i>",
-                        "doc": "A function or the name of a function triggered when an edited cell is validated.<br/>This function is invoked with the following parameters:<ul><li><i>state</i> (<code>State^</code>): the state instance.</li><li><i>var_name</i> (str): the name of the tabular data variable.</li><li><i>payload</i> (dict): a dictionary containing details about the callback invocation, with the following keys:<ul><li><i>index</i> (int): the row index.</li><li><i>col</i> (str): the column name.</li><li><i>value</i> (Any): the new cell value, cast to the column's data type.</li><li><i>user_value</i> (str): the new cell value, as entered by the user.</li><li><i>tz</i> (str): the timezone, if the column type is <tt>date</tt>.</li></ul></li></ul>If this property is set to False, the table does not provide the cell editing functionality.<br/>If this property is not set, the table will use the default implementation for editing cells.",
+                        "doc": "A function or the name of a function triggered when an edited cell is validated.<br/>This function is invoked with the following parameters:<ul><li><i>state</i> (<code>State^</code>): the state instance.</li><li><i>var_name</i> (str): the name of the tabular data variable.</li><li><i>payload</i> (dict): a dictionary containing details about the callback invocation, with the following keys:<ul><li><i>index</i> (int): the row index.</li><li><i>col</i> (str): the column name.</li><li><i>value</i> (Any): the new cell value, cast to the column's data type.</li><li><i>user_value</i> (str): the new cell value, as entered by the user.</li><li><i>tz</i> (str): the timezone, if the column type is <code>date</code>.</li></ul></li></ul>If this property is set to False, the table does not provide the cell editing functionality.<br/>If this property is not set, the table will use the default implementation for editing cells.",
                         "signature": [
                             [
                                 "state",
@@ -1073,7 +1097,7 @@
                     {
                         "name": "mode",
                         "type": "str",
-                        "doc": "Define the way the selector is displayed:\n<ul><li>&quot;radio&quot;: as a list of radio buttons</li><li>&quot;check&quot;: as a list of check boxes</li><li>any other value: a plain list."
+                        "doc": "Define the way the selector is displayed:\n<ul><li>&quot;radio&quot;: as a list of radio buttons</li><li>&quot;check&quot;: as a list of check boxes</li><li>any other value: a plain list.</ul>"
                     },
                     {
                         "name": "dropdown",
@@ -1082,10 +1106,21 @@
                         "doc": "If True, the list of items is shown in a dropdown menu.<br/><br/>You cannot use the filter in that situation."
                     },
                     {
+                        "name": "selection_message",
+                        "type": "dynamic(str)",
+                        "doc": "TODO the message shown in the selection area of a dropdown selector when at least one element is selected, list the selected elements if None."
+                    },
+                    {
                         "name": "multiple",
                         "type": "bool",
                         "default_value": "False",
                         "doc": "If True, the user can select multiple items."
+                    },
+                    {
+                        "name": "show_select_all",
+                        "type": "bool",
+                        "default_value": "False",
+                        "doc": "TODO If True and multiple, show a select all option"
                     },
                     {
                         "name": "filter",
@@ -1097,12 +1132,12 @@
                         "name": "width",
                         "type": "Union[str,int]",
                         "default_value": "\"360px\"",
-                        "doc": "The width of this selector, in CSS units."
+                        "doc": "The width of the selector, in CSS units."
                     },
                     {
                         "name": "height",
                         "type": "Union[str,int]",
-                        "doc": "The height of this selector, in CSS units."
+                        "doc": "The height of the selector, in CSS units."
                     }
                 ]
             }
@@ -1296,12 +1331,12 @@
                         "name": "width",
                         "type": "Union[str,int,float]",
                         "default_value": "\"300px\"",
-                        "doc": "The width of this image control, in CSS units."
+                        "doc": "The width of the image control, in CSS units."
                     },
                     {
                         "name": "height",
                         "type": "Union[str,int,float]",
-                        "doc": "The height of this image control, in CSS units."
+                        "doc": "The height of the image control, in CSS units."
                     }
                 ]
             }
@@ -1329,13 +1364,13 @@
                         "name": "min",
                         "type": "Union[int,float]",
                         "default_value": "0",
-                        "doc": "The minimum value of this metric control's gauge."
+                        "doc": "The minimum value of the metric control's gauge."
                     },
                     {
                         "name": "max",
                         "type": "Union[int,float]",
                         "default_value": "100",
-                        "doc": "The maximum value of this metric control's gauge."
+                        "doc": "The maximum value of the metric control's gauge."
                     },
                     {
                         "name": "delta",
@@ -1392,14 +1427,14 @@
                     {
                         "name": "width",
                         "type": "Union[str,number]",
-                        "default_value": "None",
-                        "doc": "The width of the metric control, in CSS units."
+                        "default_value": "\"20vw\"",
+                        "doc": "The width of the metric control, in CSS units"
                     },
                     {
                         "name": "height",
                         "type": "Union[str,number]",
-                        "default_value": "None",
-                        "doc": "The height of the metric control, in CSS units."
+                        "default_value": "\"20vh\"",
+                        "doc": "The height of the metric control, in CSS units"
                     },
                     {
                         "name": "layout",
@@ -1468,7 +1503,7 @@
                         "name": "width",
                         "type": "Union[str,int]",
                         "default_value": "None",
-                        "doc": "The width of this progress indicator, in CSS units."
+                        "doc": "The width of the progress indicator, in CSS units."
                     }
                 ]
             }
@@ -1513,7 +1548,7 @@
                         "name": "orientation",
                         "type": "str",
                         "default_value": "\"horizontal\"",
-                        "doc": "The orientation of this slider."
+                        "doc": "The orientation of the indicator."
                     },
                     {
                         "name": "width",
@@ -1584,7 +1619,7 @@
                     {
                         "name": "adapter",
                         "type": "Union[str, Callable]",
-                        "default_value": "<tt>lambda x: str(x)</tt>",
+                        "default_value": "<code>lambda x: str(x)</code>",
                         "doc": "A function or the name of the function that transforms an element of <i>lov</i> into a <i>tuple(id:str, label:Union[str,Icon])</i>.<br/>The default value is a function that returns the string representation of the <i>lov</i> element."
                     },
                     {
@@ -1628,7 +1663,9 @@
         [
             "alert",
             {
-                "inherits": ["shared"],
+                "inherits": [
+                    "shared"
+                ],
                 "properties": [
                     {
                         "name": "message",
@@ -1676,6 +1713,12 @@
                         "type": "bool",
                         "default_value": "False",
                         "doc": "If True, the user cannot remove the status items from the list."
+                    },
+                    {
+                        "name": "use_icon",
+                        "type": "indexed(Union[bool,str])",
+                        "default_value": "False",
+                        "doc": "TODO If True, status shows a predefined icon. A string shows as svg content (URL or element). Key from \"info\", \"success\", \"warning\", \"error\"."
                     }
                 ]
             }
@@ -1717,6 +1760,11 @@
                         "name": "message",
                         "type": "dynamic(str)",
                         "doc": "The message shown in the dialog."
+                    },
+                    {
+                        "name": "labels",
+                        "type": "Union[str,list[str]]",
+                        "doc": "A list of labels to show in a row of buttons at the bottom of the dialog. The index of the button in the list is reported as args in the <code>on_action</code> callback (that index is -1 for the <i>close</i> icon)."
                     }
                 ]
             }
@@ -1781,7 +1829,7 @@
                     {
                         "name": "height",
                         "type": "Union[str,int,float]",
-                        "doc": "The maximum height of this chat control, in CSS units."
+                        "doc": "The maximum height of the chat control, in CSS units."
                     },
                     {
                         "name": "show_sender",
@@ -1798,8 +1846,14 @@
                     {
                         "name": "max_file_size",
                         "type": "int",
-                        "default_value": "1024 * 1024",
-                        "doc": "The maximum allowable file size, in bytes, for files uploaded to a chat message.\nThe default is 1 MB."
+                        "default_value": "0.8 * 1024 * 1024",
+                        "doc": "The maximum allowable file size, in bytes, for files uploaded to a chat message.\nThe default is 0.8 MB."
+                    },
+                    {
+                        "name": "allow_send_images",
+                        "type": "bool",
+                        "default_value": "True",
+                        "doc": "TODO if True, an upload image icon is shown."
                     }
                 ]
             }
@@ -1832,7 +1886,15 @@
                     {
                         "name": "row_height",
                         "type": "str",
-                        "doc": "The height of each row of this tree, in CSS units."
+                        "doc": "The height of each row of the tree, in CSS units."
+                    },
+                    {
+                        "name": "mode",
+                        "hide": true
+                    },
+                    {
+                        "name": "dropdown",
+                        "hide": true
                     }
                 ]
             }
@@ -1867,7 +1929,7 @@
                     {
                         "name": "height",
                         "type": "dynamic(str)",
-                        "doc": "The height, in CSS units, of this block."
+                        "doc": "The height of the part, in CSS units."
                     },
                     {
                         "name": "content",
@@ -1890,7 +1952,7 @@
                         "name": "title",
                         "default_property": true,
                         "type": "dynamic(str)",
-                        "doc": "Title of this block element."
+                        "doc": "Title of the expandable block."
                     },
                     {
                         "name": "expanded",
@@ -1940,23 +2002,24 @@
                         "name": "close_label",
                         "type": "str",
                         "default_value": "\"Close\"",
-                        "doc": "The tooltip of the top-right close icon button. In the <tt>on_action</tt> callback, <i>args</i> will be set to -1."
+                        "doc": "The tooltip of the top-right close icon button. In the <code>on_action</code> callback, <i>args</i> will be set to -1."
                     },
                     {
                         "name": "labels",
                         "type": "Union[str,list[str]]",
-                        "doc": "A list of labels to show in a row of buttons at the bottom of the dialog. The index of the button in the list is reported as args in the <tt>on_action</tt> callback (that index is -1 for the <i>close</i> icon)."
+                        "doc": "A list of labels to show in a row of buttons at the bottom of the dialog. The index of the button in the list is reported as args in the <code>on_action</code> callback (that index is -1 for the <i>close</i> icon)."
                     },
                     {
                         "name": "width",
                         "type": "Union[str,int,float]",
-                        "doc": "The width of this dialog, in CSS units."
+                        "doc": "The width of the dialog, in CSS units."
                     },
                     {
                         "name": "height",
                         "type": "Union[str,int,float]",
-                        "doc": "The height of this dialog, in CSS units."
-                    }
+                        "doc": "The height of the dialog, in CSS units."
+                    },
+                    {"name": "ref_id", "type": "dynamic(str)", "doc": "TODO an id or a query selector that allows to identify an HTML component that would be the anchor for the dialog."}
                 ]
             }
         ],
@@ -2037,13 +2100,13 @@
                         "name": "width",
                         "type": "str",
                         "default_value": "\"30vw\"",
-                        "doc": "Width, in CSS units, of this pane.<br/>This is used only if <i>anchor</i> is \"left\" or \"right\"."
+                        "doc": "Width of the pane, in CSS units.<br/>This is used only if <i>anchor</i> is \"left\" or \"right\"."
                     },
                     {
                         "name": "height",
                         "type": "str",
                         "default_value": "\"30vh\"",
-                        "doc": "Height, in CSS units, of this pane.<br/>This is used only if <i>anchor</i> is \"top\" or \"bottom\"."
+                        "doc": "Height of this pane, in CSS units.<br/>This is used only if <i>anchor</i> is \"top\" or \"bottom\"."
                     },
                     {
                         "name": "show_button",
@@ -2064,7 +2127,7 @@
                         "name": "active",
                         "type": "dynamic(bool)",
                         "default_value": "True",
-                        "doc": "Indicates if this component is active.<br/>An inactive component allows no user interaction."
+                        "doc": "Indicates if this element is active.<br/>If False, the element is disabled, and user interaction is not allowed."
                     }
                 ]
             }
@@ -2090,7 +2153,7 @@
                     {
                         "name": "adapter",
                         "type": "Union[str, Callable]",
-                        "default_value": "<tt>lambda x: str(x)</tt>",
+                        "default_value": "<code>lambda x: str(x)</code>",
                         "doc": "A function or the name of the function that transforms an element of <i>lov</i> into a <i>tuple(id:str, label:Union[str,Icon])</i>.<br/>The default value is a function that returns the string representation of the <i>lov</i> element."
                     },
                     {
@@ -2115,7 +2178,7 @@
                     {
                         "name": "on_change",
                         "type": "Union[str, Callable]",
-                        "doc": "A function or the name of a function that is triggered when the value is updated.<br/>This function is invoked with the following parameters:<ul>\n<li>state (<code>State^</code>): the state instance.</li><li>var_name (str): the variable name.</li><li>value (Any): the new value.</li></ul>",
+                        "doc": "A function or the name of a function that is triggered when the value changes.<br/>The callback function receives the following parameters:<ul>\n<li>state (<code>State^</code>): the state instance.</li><li>var_name (str): the bound variable name.</li><li>value (Any): the updated value.</li></ul>",
                         "signature": [
                             [
                                 "state",
@@ -2163,7 +2226,7 @@
                         "name": "propagate",
                         "type": "bool",
                         "default_value": "<i>App config</i>",
-                        "doc": "Allows the control's main value to be automatically propagated.<br/>The default value is defined at the application configuration level by the <strong>propagate</strong> configuration option.<br/>If True, any change to the control's value is immediately reflected in the bound application variable."
+                        "doc": "Determines whether the control's value is automatically reflected in the bound application variable.<br/>The default value is defined at the application configuration level by the <strong>propagate</strong> configuration option.<br/>If True, any change to the control's value is immediately reflected in the variable."
                     }
                 ]
             }
@@ -2176,12 +2239,12 @@
                         "name": "change_delay",
                         "type": "int",
                         "default_value": "<i>App config</i>",
-                        "doc": "Minimum interval between two consecutive calls to the <tt>on_change</tt> callback.<br/>The default value is defined at the application configuration level by the <strong>change_delay</strong> configuration option.<br/>if None, the delay is set to 300 ms.<br/>If set to -1, the input change is triggered only when the user presses the Enter key."
+                        "doc": "The minimum interval (in milliseconds) between two consecutive calls to the <code>on_change</code> callback.<br/>The default value is defined at the application configuration level by the <strong>change_delay</strong> configuration option.<br/>if None, the delay is set to 300 ms.<br/>If set to -1, the callback is triggered only when the user presses the Enter key."
                     },
                     {
                         "name": "on_action",
                         "type": "Union[str, Callable]",
-                        "doc": "A function or the name of a function that is triggered when a specific key is pressed.<br/>This function is invoked with the following parameters:<ul>\n<li>state (<code>State^</code>): the state instance.</li><li>id (str): the identifier of the control if it has one.</li><li>payload (dict): the details on this callback's invocation.<br/>\nThis dictionary has the following keys:\n<ul>\n<li>action: the name of the action that triggered this callback.</li><li>args (list):\n<ul><li>key name</li><li>variable name</li><li>current value</li></ul></li></ul></li></ul>",
+                        "doc": "A function or the name of a function that is triggered when a specific key is pressed.<br/>The callback function is invoked with the following parameters:<ul>\n<li>state (<code>State^</code>): the state instance.</li><li>id (str): the identifier of the control if it has one.</li><li>payload (dict): the callback details<br/>\nThis dictionary has the following keys:\n<ul>\n<li>action: the name of the action that triggered this callback.</li><li>args (list):\n<ul><li>The key name pressed.</li><li>The variable name.</li><li>The current value of the variable.</li></ul></li></ul></li></ul>",
                         "signature": [
                             [
                                 "state",
@@ -2201,13 +2264,13 @@
                         "name": "action_keys",
                         "type": "str",
                         "default_value": "\"Enter\"",
-                        "doc": "Semicolon (';')-separated list of supported key names.<br/>Authorized values are Enter, Escape, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12."
+                        "doc": "A semicolon-separated list of keys that can trigger the <code>on_action</code> callback.<br/>Authorized values are Enter, Escape, and function keys F1 to F12."
                     },
                     {
                         "name": "width",
                         "type": "Union[str,int]",
                         "default_value": "None",
-                        "doc": "The width of the element."
+                        "doc": "The width of the element, in CSS units."
                     }
                 ]
             }
@@ -2219,22 +2282,22 @@
                     {
                         "name": "id",
                         "type": "str",
-                        "doc": "The identifier that is assigned to the rendered HTML component."
+                        "doc": "The identifier assigned to the rendered HTML component.<br/>This can be used in callbacks or to target the element for styling."
                     },
                     {
                         "name": "properties",
                         "type": "dict[str, Any]",
-                        "doc": "Bound to a dictionary that contains additional properties for this element."
+                        "doc": "A dictionary of additional properties that can be set to the element."
                     },
                     {
                         "name": "class_name",
                         "type": "dynamic(str)",
-                        "doc": "The list of CSS class names that are associated with the generated HTML Element.<br/>These class names are added to the default <code>taipy-[element_type]</code> class name."
+                        "doc": "A space-separated list of CSS class names to be applied to the generated HTML element.<br/>These classes are added to the default <code>taipy-[element_type]</code> class."
                     },
                     {
                         "name": "hover_text",
                         "type": "dynamic(str)",
-                        "doc": "The information that is displayed when the user hovers over this element."
+                        "doc": "The text that is displayed when the user hovers over the element."
                     }
                 ]
             }

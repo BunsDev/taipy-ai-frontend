@@ -10,19 +10,25 @@
 # specific language governing permissions and limitations under the License.
 import traceback
 
-from taipy import Job, JobId, Status, Task
+from taipy import Job, JobId, Scope, Status, Task
 from taipy.core._orchestrator._dispatcher import _JobDispatcher
 from taipy.core._orchestrator._orchestrator_factory import _OrchestratorFactory
+from taipy.core.data import InMemoryDataNode
+from taipy.core.data.data_node_id import EDIT_JOB_ID_KEY, EDIT_TIMESTAMP_KEY
 from taipy.core.job._job_manager_factory import _JobManagerFactory
 from taipy.core.task._task_manager_factory import _TaskManagerFactory
 
 
 def nothing(*args):
-    pass
+    return 42
 
+
+def _error():
+    raise RuntimeError("Something bad has happened")
 
 def test_update_job_status_no_exception():
-    task = Task("config_id", {}, nothing)
+    output = InMemoryDataNode("data_node", scope=Scope.SCENARIO)
+    task = Task("config_id",  {}, nothing, output=[output])
     _TaskManagerFactory._build_manager()._set(task)
     job = Job(JobId("id"), task, "s_id", task.id)
     _JobManagerFactory._build_manager()._set(job)
@@ -31,6 +37,14 @@ def test_update_job_status_no_exception():
 
     assert job.status == Status.COMPLETED
     assert job.stacktrace == []
+    assert len(output.edits) == 1
+    assert len(output.edits[0]) == 2
+    assert output.edits[0][EDIT_JOB_ID_KEY] == job.id
+    assert output.edits[0][EDIT_TIMESTAMP_KEY] is not None
+    assert output.last_edit_date is not None
+    assert output.editor_id is None
+    assert output.editor_expiration_date is None
+    assert not output.edit_in_progress
 
 
 def test_update_job_status_with_one_exception():

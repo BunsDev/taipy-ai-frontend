@@ -14,6 +14,8 @@ from datetime import datetime, timedelta
 from time import sleep
 from unittest import mock
 
+import freezegun
+import pandas as pd
 import pytest
 
 import taipy.core as tp
@@ -80,6 +82,26 @@ class TestDataNode:
         assert dn.job_ids == []
         assert not dn.is_ready_for_reading
         assert len(dn.properties) == 0
+
+    def test_create_with_ranks(self):
+        # Test _rank is propagated from the config
+        cfg = Config.configure_data_node("foo_bar")
+        cfg._ranks = {"A": 1, "B": 2, "C": 0}
+
+        dn = DataNode("foo_bar")
+        assert dn.config_id == "foo_bar"
+        assert dn.scope == Scope.SCENARIO
+        assert dn.id is not None
+        assert dn.name is None
+        assert dn.owner_id is None
+        assert dn.parent_ids == set()
+        assert dn.last_edit_date is None
+        assert dn.job_ids == []
+        assert not dn.is_ready_for_reading
+        assert len(dn.properties) == 0
+        assert dn._get_rank("A") == 1
+        assert dn._get_rank("B") == 2
+        assert dn._get_rank("C") == 0
 
     def test_is_up_to_date_when_not_written(self):
         dn_confg_1 = Config.configure_in_memory_data_node("dn_1", default_data="a")
@@ -752,6 +774,116 @@ class TestDataNode:
         dn.properties["name"] = "baz"
         assert dn.name == "baz"
 
+    def test_locked_data_node_write_should_fail_with_wrong_editor(self):
+        dn_config = Config.configure_data_node("A")
+        dn = _DataManager._bulk_get_or_create([dn_config])[dn_config]
+        dn.lock_edit("editor_1")
+
+        # Should raise exception for wrong editor
+        with pytest.raises(DataNodeIsBeingEdited):
+            dn.write("data", editor_id="editor_2")
+
+        # Should succeed with correct editor
+        dn.write("data", editor_id="editor_1")
+        assert dn.read() == "data"
+
+    def test_locked_data_node_write_should_fail_before_expiration_date_and_succeed_after(self):
+        dn_config = Config.configure_data_node("A")
+        dn = _DataManager._bulk_get_or_create([dn_config])[dn_config]
+
+        lock_time = datetime.now()
+        with freezegun.freeze_time(lock_time):
+            dn.lock_edit("editor_1")
+
+        with freezegun.freeze_time(lock_time + timedelta(minutes=29)):
+            # Should raise exception for wrong editor and expiration date NOT passed
+            with pytest.raises(DataNodeIsBeingEdited):
+                dn.write("data", editor_id="editor_2")
+
+        with freezegun.freeze_time(lock_time + timedelta(minutes=31)):
+            # Should succeed with wrong editor but expiration date passed
+            dn.write("data", editor_id="editor_2")
+            assert dn.read() == "data"
+
+    def test_locked_data_node_append_should_fail_with_wrong_editor(self):
+        dn_config = Config.configure_csv_data_node("A")
+        dn = _DataManager._bulk_get_or_create([dn_config])[dn_config]
+        first_line = pd.DataFrame(data={'col1': [1], 'col2': [3]})
+        second_line = pd.DataFrame(data={'col1': [2], 'col2': [4]})
+        data = pd.DataFrame(data={'col1': [1, 2], 'col2': [3, 4]})
+        dn.write(first_line)
+        assert first_line.equals(dn.read())
+
+        dn.lock_edit("editor_1")
+
+        with pytest.raises(DataNodeIsBeingEdited):
+            dn.append(second_line, editor_id="editor_2")
+
+        dn.append(second_line, editor_id="editor_1")
+        assert dn.read().equals(data)
+
+    def test_locked_data_node_append_should_fail_before_expiration_date_and_succeed_after(self):
+        dn_config = Config.configure_csv_data_node("A")
+        dn = _DataManager._bulk_get_or_create([dn_config])[dn_config]
+        first_line = pd.DataFrame(data={'col1': [1], 'col2': [3]})
+        second_line = pd.DataFrame(data={'col1': [2], 'col2': [4]})
+        data = pd.DataFrame(data={'col1': [1, 2], 'col2': [3, 4]})
+        dn.write(first_line)
+        assert first_line.equals(dn.read())
+
+        lock_time = datetime.now()
+        with freezegun.freeze_time(lock_time):
+            dn.lock_edit("editor_1")
+
+        with freezegun.freeze_time(lock_time + timedelta(minutes=29)):
+            # Should raise exception for wrong editor and expiration date NOT passed
+            with pytest.raises(DataNodeIsBeingEdited):
+                dn.append(second_line, editor_id="editor_2")
+
+        with freezegun.freeze_time(lock_time + timedelta(minutes=31)):
+            # Should succeed with wrong editor but expiration date passed
+            dn.append(second_line, editor_id="editor_2")
+            assert dn.read().equals(data)
+
+    def test_orchestrator_write_without_editor_id(self):
+        dn_config = Config.configure_data_node("A")
+        dn = _DataManager._bulk_get_or_create([dn_config])[dn_config]
+        dn.lock_edit("editor_1")
+
+        # Orchestrator write without editor_id should succeed
+        dn.write("orchestrator_data")
+        assert dn.read() == "orchestrator_data"
+
+    def test_editor_fails_writing_a_data_node_locked_by_orchestrator(self):
+        dn_config = Config.configure_data_node("A")
+        dn = _DataManager._bulk_get_or_create([dn_config])[dn_config]
+        dn.lock_edit() # Locked by orchestrator
+
+        with pytest.raises(DataNodeIsBeingEdited):
+            dn.write("data", editor_id="editor_1")
+
+        # Orchestrator write without editor_id should succeed
+        dn.write("orchestrator_data", job_id=JobId("job_1"))
+        assert dn.read() == "orchestrator_data"
+
+    def test_editor_fails_appending_a_data_node_locked_by_orchestrator(self):
+        dn_config = Config.configure_csv_data_node("A")
+        dn = _DataManager._bulk_get_or_create([dn_config])[dn_config]
+        first_line = pd.DataFrame(data={'col1': [1], 'col2': [3]})
+        second_line = pd.DataFrame(data={'col1': [2], 'col2': [4]})
+        data = pd.DataFrame(data={'col1': [1, 2], 'col2': [3, 4]})
+        dn.write(first_line)
+        assert first_line.equals(dn.read())
+        dn = _DataManager._bulk_get_or_create([dn_config])[dn_config]
+        dn.lock_edit() # Locked by orchestrator
+
+        with pytest.raises(DataNodeIsBeingEdited):
+            dn.append(second_line, editor_id="editor_1")
+        assert dn.read().equals(first_line)
+
+        dn.append(second_line, job_id=JobId("job_1"))
+        assert dn.read().equals(data)
+
     def test_track_edit(self):
         dn_config = Config.configure_data_node("A")
         data_node = _DataManager._bulk_get_or_create([dn_config])[dn_config]
@@ -807,3 +939,15 @@ class TestDataNode:
         edit_5 = data_node.edits[5]
         assert len(edit_5) == 1
         assert edit_5[EDIT_TIMESTAMP_KEY] == timestamp
+
+    def test_normalize_path(self):
+        dn = DataNode(
+            config_id="foo_bar",
+            scope=Scope.SCENARIO,
+            id=DataNodeId("an_id"),
+            path=r"data\foo\bar.csv",
+        )
+        assert dn.config_id == "foo_bar"
+        assert dn.scope == Scope.SCENARIO
+        assert dn.id == "an_id"
+        assert dn.properties["path"] == "data/foo/bar.csv"

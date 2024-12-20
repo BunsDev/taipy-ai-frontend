@@ -239,7 +239,7 @@ describe("Metric Component", () => {
     });
 
     it("applies style correctly when deltaColor is set", async () => {
-        const { container } = render(<Metric delta={10} deltaColor="#FF4136"  />);
+        const { container } = render(<Metric delta={10} deltaColor="#FF4136" />);
         await waitFor(() => {
             const elt = container.querySelector(".delta");
             expect(elt).toHaveStyle({
@@ -249,7 +249,7 @@ describe("Metric Component", () => {
     });
 
     it("applies style correctly when deltaColor is set invert", async () => {
-        const { container } = render(<Metric delta={10} deltaColor="invert"  />);
+        const { container } = render(<Metric delta={10} deltaColor="invert" />);
         await waitFor(() => {
             const elt = container.querySelector(".delta");
             expect(elt).toHaveStyle({
@@ -259,7 +259,7 @@ describe("Metric Component", () => {
     });
 
     it("processes type and threshold props correctly when type is linear", async () => {
-        const { container } = render(<Metric type="linear" threshold={50}  />);
+        const { container } = render(<Metric type="linear" threshold={50} />);
         await waitFor(() => {
             const elt = container.querySelector(".bullet");
             expect(elt).toBeInTheDocument();
@@ -267,24 +267,124 @@ describe("Metric Component", () => {
     });
 
     it("processes type and threshold props correctly when type is not linear", async () => {
-        const { container } = render(<Metric type="angular" threshold={50}  />);
+        const { container } = render(<Metric type="angular" threshold={50} />);
         await waitFor(() => {
             const elt = container.querySelector(".angular");
             expect(elt).toBeInTheDocument();
         });
     });
 
-    it("applies style correctly when height is undefined", async () => {
+    it("applies style correctly when height and width are undefined", async () => {
         const { container } = render(<Metric />);
         await waitFor(() => {
             const elt = container.querySelector(".js-plotly-plot");
             expect(elt).toHaveStyle({
-                width: "100%",
-                position: "relative",
-                display: "inline-block",
+                width: "20vw",
+                height: "20vh",
             });
         });
     });
+
+    it("applies style correctly when height is set to 100px", async () => {
+        const { container } = render(<Metric height="100px" />);
+        await waitFor(() => {
+            const elt = container.querySelector(".js-plotly-plot");
+            expect(elt).toHaveStyle({
+                height: "100px",
+            });
+        });
+    });
+
+    it("applies style correctly when height is set to 30em", async () => {
+        const { container } = render(<Metric height="30em" />);
+        await waitFor(() => {
+            const elt = container.querySelector(".js-plotly-plot");
+            expect(elt).toHaveStyle({
+                height: "30em",
+            });
+        });
+    });
+
+    it("applies style correctly when height is set to 30%", async () => {
+        const { container } = render(<Metric height="30%" />);
+        await waitFor(() => {
+            const elt = container.querySelector(".js-plotly-plot");
+            expect(elt).toHaveStyle({
+                height: "30%",
+            });
+        });
+    });
+
+    it("applies style correctly when height is set to 30vh", async () => {
+        const { container } = render(<Metric height="30vh" />);
+        await waitFor(() => {
+            const elt = container.querySelector(".js-plotly-plot");
+            expect(elt).toHaveStyle({
+                height: "30vh",
+            });
+        });
+    });
+
+    it("applies style correctly when height is set to 30vw", async () => {
+        const { container } = render(<Metric height="30vw" />);
+        await waitFor(() => {
+            const elt = container.querySelector(".js-plotly-plot");
+            expect(elt).toHaveStyle({
+                height: "30vw",
+            });
+        });
+    });
+
+    it("applies style correctly when width is set to 100px", async () => {
+        const { container } = render(<Metric width="100px" />);
+        await waitFor(() => {
+            const elt = container.querySelector(".js-plotly-plot");
+            expect(elt).toHaveStyle({
+                width: "100px",
+            });
+        });
+    });
+
+    it("applies style correctly when width is set to 30em", async () => {
+        const { container } = render(<Metric width="30em" />);
+        await waitFor(() => {
+            const elt = container.querySelector(".js-plotly-plot");
+            expect(elt).toHaveStyle({
+                width: "30em",
+            });
+        });
+    });
+
+    it("applies style correctly when width is set to 30%", async () => {
+        const { container } = render(<Metric width="30%" />);
+        await waitFor(() => {
+            const elt = container.querySelector(".js-plotly-plot");
+            expect(elt).toHaveStyle({
+                width: "30%",
+            });
+        });
+    });
+
+    it("applies style correctly when width is set to 30vh", async () => {
+        const { container } = render(<Metric width="30vh" />);
+        await waitFor(() => {
+            const elt = container.querySelector(".js-plotly-plot");
+            expect(elt).toHaveStyle({
+                width: "30vh",
+            });
+        });
+    });
+
+    it("applies style correctly when width is set to 30vw", async () => {
+        const { container } = render(<Metric width="30vw" />);
+        await waitFor(() => {
+            const elt = container.querySelector(".js-plotly-plot");
+            expect(elt).toHaveStyle({
+                width: "30vw",
+            });
+        });
+    });
+
 
     it("processes type prop correctly when type is none (string)", async () => {
         const { container } = render(<Metric type="none" />);
@@ -295,7 +395,7 @@ describe("Metric Component", () => {
             expect(angularAxis).not.toBeInTheDocument();
         });
     });
-    
+
     it("processes type prop correctly when type is None", async () => {
         const { container } = render(<Metric type="None" />);
         await waitFor(() => {
@@ -315,8 +415,8 @@ describe("Metric Component", () => {
 
         const { container } = render(
             <ThemeProvider theme={darkTheme}>
-                <Metric template_Dark_={JSON.stringify(darkTemplate)}  />
-            </ThemeProvider>
+                <Metric template_Dark_={JSON.stringify(darkTemplate)} />
+            </ThemeProvider>,
         );
         await waitFor(() => {
             const elt = container.querySelector(".main-svg");
@@ -335,8 +435,8 @@ describe("Metric Component", () => {
 
         const { container } = render(
             <ThemeProvider theme={lightTheme}>
-                <Metric template_Light_={JSON.stringify(lightTemplate)}  />
-            </ThemeProvider>
+                <Metric template_Light_={JSON.stringify(lightTemplate)} />
+            </ThemeProvider>,
         );
         await waitFor(() => {
             const elt = container.querySelector(".main-svg");
@@ -348,7 +448,7 @@ describe("Metric Component", () => {
 
     it.skip("logs an error when template_Dark_ prop is not a valid JSON string", () => {
         const consoleSpy = jest.spyOn(console, "info");
-        render(<Metric template_Dark_="not a valid JSON string"/>);
+        render(<Metric template_Dark_="not a valid JSON string" />);
         expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Error while parsing Metric.template"));
         consoleSpy.mockRestore();
     }); // TODO: Not working at the moment, need to fix

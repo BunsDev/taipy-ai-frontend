@@ -513,12 +513,12 @@ class TestDataNodeConfigChecker:
             Config.check()
         assert len(Config._collector.errors) == 2
         expected_error_message_1 = (
-            "`write_query_builder` of DataNodeConfig `new` must be populated with a Callable function."
+            "`write_query_builder` of DataNodeConfig `new` must be populated with a Callable."
             " Current value of property `write_query_builder` is 1."
         )
         assert expected_error_message_1 in caplog.text
         expected_error_message_2 = (
-            "`append_query_builder` of DataNodeConfig `new` must be populated with a Callable function."
+            "`append_query_builder` of DataNodeConfig `new` must be populated with a Callable."
             " Current value of property `append_query_builder` is 2."
         )
         assert expected_error_message_2 in caplog.text
@@ -530,7 +530,7 @@ class TestDataNodeConfigChecker:
             Config.check()
         assert len(Config._collector.errors) == 1
         expected_error_messages = [
-            "`write_fct` of DataNodeConfig `new` must be populated with a Callable function. Current value"
+            "`write_fct` of DataNodeConfig `new` must be populated with a Callable. Current value"
             " of property `write_fct` is 12.",
         ]
         assert all(message in caplog.text for message in expected_error_messages)
@@ -542,7 +542,7 @@ class TestDataNodeConfigChecker:
             Config.check()
         assert len(Config._collector.errors) == 1
         expected_error_messages = [
-            "`read_fct` of DataNodeConfig `new` must be populated with a Callable function. Current value"
+            "`read_fct` of DataNodeConfig `new` must be populated with a Callable. Current value"
             " of property `read_fct` is 5.",
         ]
         assert all(message in caplog.text for message in expected_error_messages)
@@ -554,9 +554,9 @@ class TestDataNodeConfigChecker:
             Config.check()
         assert len(Config._collector.errors) == 2
         expected_error_messages = [
-            "`write_fct` of DataNodeConfig `new` must be populated with a Callable function. Current value"
+            "`write_fct` of DataNodeConfig `new` must be populated with a Callable. Current value"
             " of property `write_fct` is 9.",
-            "`read_fct` of DataNodeConfig `new` must be populated with a Callable function. Current value"
+            "`read_fct` of DataNodeConfig `new` must be populated with a Callable. Current value"
             " of property `read_fct` is 5.",
         ]
         assert all(message in caplog.text for message in expected_error_messages)
@@ -580,6 +580,22 @@ class TestDataNodeConfigChecker:
         Config._collector = IssueCollector()
         Config.check()
         assert len(Config._collector.errors) == 0
+
+        config._sections[DataNodeConfig.name]["new"].storage_type = "generic"
+        config._sections[DataNodeConfig.name]["new"].properties = {"write_fct": lambda x: x, "read_fct": lambda y: y}
+        with pytest.raises(SystemExit):
+            Config._collector = IssueCollector()
+            Config.check()
+        assert len(Config._collector.errors) == 2
+        expected_error_messages = [
+            "`write_fct` of DataNodeConfig `new` must be populated with a serializable Callable function but"
+            " not a lambda. Current value of property `write_fct` is <function TestDataNodeConfigChecker."
+            "test_check_callable_properties.<locals>.<lambda>",
+            "`read_fct` of DataNodeConfig `new` must be populated with a serializable Callable function but"
+            " not a lambda. Current value of property `read_fct` is <function TestDataNodeConfigChecker."
+            "test_check_callable_properties.<locals>.<lambda>",
+        ]
+        assert all(message in caplog.text for message in expected_error_messages)
 
     def test_check_read_write_fct_args(self, caplog):
         config = Config._applied_config

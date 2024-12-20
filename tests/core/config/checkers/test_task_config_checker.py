@@ -311,3 +311,51 @@ class TestTaskConfigChecker:
         Config.check()
         assert len(Config._collector.errors) == 0
         assert len(Config._collector.warnings) == 2
+
+    def test_check_required_property(self, caplog):
+        prev_required_properties = TaskConfig._REQUIRED_PROPERTIES.copy()
+
+        TaskConfig._REQUIRED_PROPERTIES = {"task_type": ["required_key_1", "required_key_2"]}
+
+        config = Config._applied_config
+        Config._compile_configs()
+
+        config._sections[TaskConfig.name]["default"]._outputs = "bar"
+        Config._collector = IssueCollector()
+        Config.check()
+        assert len(Config._collector.errors) == 0
+        assert len(Config._collector.warnings) == 0
+
+        config._sections[TaskConfig.name]["new"] = config._sections[TaskConfig.name]["default"]
+        config._sections[TaskConfig.name]["new"].id = "new"
+        config._sections[TaskConfig.name]["new"].function = print
+        config._sections[TaskConfig.name]["new"]._outputs = [DataNodeConfig("bar")]
+        config._sections[TaskConfig.name]["new"]._properties = {"task_type": True, "required_key_1": None}
+        with pytest.raises(SystemExit):
+            Config._collector = IssueCollector()
+            Config.check()
+        assert len(Config._collector.errors) == 2
+        expected_error_message_1 = (
+            "TaskConfig `new` is either missing the required property `required_key_1` or the value is set to None."
+        )
+        assert expected_error_message_1 in caplog.text
+        expected_error_message_2 = (
+            "TaskConfig `new` is either missing the required property `required_key_2` or the value is set to None."
+        )
+        assert expected_error_message_2 in caplog.text
+        assert len(Config._collector.warnings) == 1
+
+        TaskConfig._REQUIRED_PROPERTIES = prev_required_properties
+
+        config._sections[TaskConfig.name]["new"] = config._sections[TaskConfig.name]["default"]
+        config._sections[TaskConfig.name]["new"].id = "new"
+        config._sections[TaskConfig.name]["new"].function = print
+        config._sections[TaskConfig.name]["new"]._outputs = [DataNodeConfig("bar")]
+        config._sections[TaskConfig.name]["new"]._properties = {
+            "task_type": True,
+            "required_key_1": "sthg",
+            "required_key_2": "sthg",
+        }
+        Config._collector = IssueCollector()
+        Config.check()
+        assert len(Config._collector.errors) == 0

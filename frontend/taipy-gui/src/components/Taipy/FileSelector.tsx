@@ -22,20 +22,19 @@ import React, {
     useRef,
     useState,
 } from "react";
+import UploadFile from "@mui/icons-material/UploadFile";
 import Button from "@mui/material/Button";
 import LinearProgress from "@mui/material/LinearProgress";
 import Tooltip from "@mui/material/Tooltip";
-import UploadFile from "@mui/icons-material/UploadFile";
+import { SxProps } from "@mui/material";
+import { nanoid } from "nanoid";
 
 import { TaipyContext } from "../../context/taipyContext";
-import { createAlertAction, createSendActionNameAction } from "../../context/taipyReducers";
+import { createNotificationAction, createSendActionNameAction } from "../../context/taipyReducers";
 import { useClassNames, useDynamicProperty, useModule } from "../../utils/hooks";
-import { expandSx, getCssSize, noDisplayStyle, TaipyActiveProps } from "./utils";
 import { uploadFile } from "../../workers/fileupload";
-import { SxProps } from "@mui/material";
 import { getComponentClassName } from "./TaipyStyle";
-
-
+import { expandSx, getCssSize, noDisplayStyle, TaipyActiveProps } from "./utils";
 
 interface FileSelectorProps extends TaipyActiveProps {
     onAction?: string;
@@ -75,21 +74,26 @@ const FileSelector = (props: FileSelectorProps) => {
         notify = true,
         withBorder = true,
     } = props;
-    const directoryProps = ["d", "dir", "directory", "folder"].includes(selectionType?.toLowerCase()) ? 
-                           {webkitdirectory: "", directory: "", mozdirectory: "", nwdirectory: ""} : 
-                           undefined;
     const [dropLabel, setDropLabel] = useState("");
     const [dropSx, setDropSx] = useState<SxProps | undefined>(defaultSx);
     const [upload, setUpload] = useState(false);
     const [progress, setProgress] = useState(0);
     const { state, dispatch } = useContext(TaipyContext);
     const butRef = useRef<HTMLElement>(null);
-    const inputId = useMemo(() => (id || `tp-${Date.now()}-${Math.random()}`) + "-upload-file", [id]);
+    const inputId = useMemo(() => (id || `tp-${nanoid()}`) + "-upload-file", [id]);
     const module = useModule();
 
     const className = useClassNames(props.libClassName, props.dynamicClassName, props.className);
     const active = useDynamicProperty(props.active, props.defaultActive, true);
     const hover = useDynamicProperty(props.hoverText, props.defaultHoverText, undefined);
+
+    const directoryProps = useMemo(
+        () =>
+            selectionType.toLowerCase().startsWith("d") || "folder" == selectionType.toLowerCase()
+                ? { webkitdirectory: "", directory: "", mozdirectory: "", nwdirectory: "" }
+                : undefined,
+        [selectionType]
+    );
 
     useEffect(
         () =>
@@ -123,20 +127,34 @@ const FileSelector = (props: FileSelectorProps) => {
                         onAction && dispatch(createSendActionNameAction(id, module, onAction));
                         notify &&
                             dispatch(
-                                createAlertAction({ atype: "success", message: value, system: false, duration: 3000 })
+                                createNotificationAction({
+                                    atype: "success",
+                                    message: value,
+                                    system: false,
+                                    duration: 3000,
+                                })
                             );
+                        const fileInput = document.getElementById(inputId) as HTMLInputElement;
+                        fileInput && (fileInput.value = "");
                     },
                     (reason) => {
                         setUpload(false);
                         notify &&
                             dispatch(
-                                createAlertAction({ atype: "error", message: reason, system: false, duration: 3000 })
+                                createNotificationAction({
+                                    atype: "error",
+                                    message: reason,
+                                    system: false,
+                                    duration: 3000,
+                                })
                             );
+                        const fileInput = document.getElementById(inputId) as HTMLInputElement;
+                        fileInput && (fileInput.value = "");
                     }
                 );
             }
         },
-        [state.id, id, onAction, props.onUploadAction, props.uploadData, notify, updateVarName, dispatch, module]
+        [state.id, id, onAction, props.onUploadAction, props.uploadData, notify, updateVarName, dispatch, module, inputId]
     );
 
     const handleChange = useCallback(

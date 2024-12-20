@@ -125,7 +125,15 @@ const renderBoxSx = {
     width: "100%",
 } as CSSProperties;
 
-const Selector = (props: SelTreeProps) => {
+interface SelectorProps extends SelTreeProps {
+    dropdown?: boolean;
+    mode?: string;
+    defaultSelectionMessage?: string;
+    selectionMessage?: string;
+    showSelectAll?: boolean;
+}
+
+const Selector = (props: SelectorProps) => {
     const {
         id,
         defaultValue = "",
@@ -140,6 +148,7 @@ const Selector = (props: SelTreeProps) => {
         height,
         valueById,
         mode = "",
+        showSelectAll = false,
     } = props;
     const [searchValue, setSearchValue] = useState("");
     const [selectedValue, setSelectedValue] = useState<string[]>([]);
@@ -150,6 +159,7 @@ const Selector = (props: SelTreeProps) => {
     const className = useClassNames(props.libClassName, props.dynamicClassName, props.className);
     const active = useDynamicProperty(props.active, props.defaultActive, true);
     const hover = useDynamicProperty(props.hoverText, props.defaultHoverText, undefined);
+    const selectionMessage = useDynamicProperty(props.selectionMessage, props.defaultSelectionMessage, undefined);
 
     useDispatchRequestUpdateOnFirstRender(dispatch, id, module, updateVars, updateVarName);
 
@@ -176,7 +186,17 @@ const Selector = (props: SelTreeProps) => {
         return sx;
     }, [height]);
     const controlSx = useMemo(
-        () => ({ my: 1, mx: 0, maxWidth: width, display: "flex", "& .MuiFormControl-root": { maxWidth: "unset" } }),
+        () => ({
+            my: 1,
+            mx: 0,
+            maxWidth: width,
+            display: "flex",
+            "& .MuiFormControl-root": {
+                maxWidth: "unset",
+                my: 0,
+                "& .MuiInputBase-root": { minHeight: 48, "& input": { minHeight: "unset" } },
+            },
+        }),
         [width]
     );
 
@@ -274,6 +294,24 @@ const Selector = (props: SelTreeProps) => {
             );
         },
         [dispatch, updateVarName, propagate, updateVars, valueById, props.onChange, module]
+    );
+
+    const handleCheckAllChange = useCallback(
+        (event: SelectChangeEvent<HTMLInputElement>, checked: boolean) => {
+            const sel = checked ? lovList.map((elt) => elt.id) : [];
+            setSelectedValue(sel);
+            dispatch(
+                createSendUpdateAction(
+                    updateVarName,
+                    sel,
+                    module,
+                    props.onChange,
+                    propagate,
+                    valueById ? undefined : getUpdateVar(updateVars, "lov")
+                )
+            );
+        },
+        [lovList, dispatch, updateVarName, propagate, updateVars, valueById, props.onChange, module]
     );
 
     const [autoValue, setAutoValue] = useState<LovItem | LovItem[] | null>(() => (multiple ? [] : null));
@@ -406,43 +444,72 @@ const Selector = (props: SelTreeProps) => {
                                 multiple={multiple}
                                 value={dropdownValue}
                                 onChange={handleChange}
-                                input={<OutlinedInput label={props.label} />}
+                                input={
+                                    <OutlinedInput
+                                        label={props.label}
+                                        startAdornment={
+                                            multiple && showSelectAll ? (
+                                                <Tooltip
+                                                    title={
+                                                        selectedValue.length == lovList.length
+                                                            ? "Deselect All"
+                                                            : "Select All"
+                                                    }
+                                                >
+                                                    <Checkbox
+                                                        disabled={!active}
+                                                        indeterminate={
+                                                            selectedValue.length > 0 &&
+                                                            selectedValue.length < lovList.length
+                                                        }
+                                                        checked={selectedValue.length == lovList.length}
+                                                        onChange={handleCheckAllChange}
+                                                    ></Checkbox>
+                                                </Tooltip>
+                                            ) : null
+                                        }
+                                    />
+                                }
                                 disabled={!active}
                                 renderValue={(selected) => (
                                     <Box sx={renderBoxSx}>
-                                        {lovList
-                                            .filter((it) =>
-                                                Array.isArray(selected) ? selected.includes(it.id) : selected === it.id
-                                            )
-                                            .map((item, idx) => {
-                                                if (multiple) {
-                                                    const chipProps = {} as Record<string, unknown>;
-                                                    if (typeof item.item === "string") {
-                                                        chipProps.label = item.item;
-                                                    } else {
-                                                        chipProps.label = item.item.text || "";
-                                                        chipProps.avatar = <Avatar src={item.item.path} />;
-                                                    }
-                                                    return (
-                                                        <Chip
-                                                            key={item.id}
-                                                            {...chipProps}
-                                                            onDelete={handleDelete}
-                                                            data-id={item.id}
-                                                            onMouseDown={doNotPropagateEvent}
-                                                            disabled={!active}
-                                                        />
-                                                    );
-                                                } else if (idx === 0) {
-                                                    return typeof item.item === "string" ? (
-                                                        item.item
-                                                    ) : (
-                                                        <LovImage item={item.item} />
-                                                    );
-                                                } else {
-                                                    return null;
-                                                }
-                                            })}
+                                        {typeof selectionMessage === "string"
+                                            ? selectionMessage
+                                            : lovList
+                                                  .filter((it) =>
+                                                      Array.isArray(selected)
+                                                          ? selected.includes(it.id)
+                                                          : selected === it.id
+                                                  )
+                                                  .map((item, idx) => {
+                                                      if (multiple) {
+                                                          const chipProps = {} as Record<string, unknown>;
+                                                          if (typeof item.item === "string") {
+                                                              chipProps.label = item.item;
+                                                          } else {
+                                                              chipProps.label = item.item.text || "";
+                                                              chipProps.avatar = <Avatar src={item.item.path} />;
+                                                          }
+                                                          return (
+                                                              <Chip
+                                                                  key={item.id}
+                                                                  {...chipProps}
+                                                                  onDelete={handleDelete}
+                                                                  data-id={item.id}
+                                                                  onMouseDown={doNotPropagateEvent}
+                                                                  disabled={!active}
+                                                              />
+                                                          );
+                                                      } else if (idx === 0) {
+                                                          return typeof item.item === "string" ? (
+                                                              item.item
+                                                          ) : (
+                                                              <LovImage item={item.item} />
+                                                          );
+                                                      } else {
+                                                          return null;
+                                                      }
+                                                  })}
                                     </Box>
                                 )}
                                 MenuProps={getMenuProps(height)}
@@ -474,7 +541,7 @@ const Selector = (props: SelTreeProps) => {
                     ) : null}
                     <Tooltip title={hover || ""}>
                         <Paper sx={paperSx}>
-                            {filter && (
+                            {filter ? (
                                 <Box>
                                     <OutlinedInput
                                         margin="dense"
@@ -482,9 +549,46 @@ const Selector = (props: SelTreeProps) => {
                                         value={searchValue}
                                         onChange={handleInput}
                                         disabled={!active}
+                                        startAdornment={
+                                            multiple && showSelectAll ? (
+                                                <Tooltip
+                                                    title={
+                                                        selectedValue.length == lovList.length
+                                                            ? "Deselect All"
+                                                            : "Select All"
+                                                    }
+                                                >
+                                                    <Checkbox
+                                                        disabled={!active}
+                                                        indeterminate={
+                                                            selectedValue.length > 0 &&
+                                                            selectedValue.length < lovList.length
+                                                        }
+                                                        checked={selectedValue.length == lovList.length}
+                                                        onChange={handleCheckAllChange}
+                                                    ></Checkbox>
+                                                </Tooltip>
+                                            ) : null
+                                        }
                                     />
                                 </Box>
-                            )}
+                            ) : multiple && showSelectAll ? (
+                                <Box paddingLeft={1}>
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                disabled={!active}
+                                                indeterminate={
+                                                    selectedValue.length > 0 && selectedValue.length < lovList.length
+                                                }
+                                                checked={selectedValue.length == lovList.length}
+                                                onChange={handleCheckAllChange}
+                                            ></Checkbox>
+                                        }
+                                        label={selectedValue.length == lovList.length ? "Deselect All" : "Select All"}
+                                    />
+                                </Box>
+                            ) : null}
                             <List sx={listSx} id={id}>
                                 {lovList
                                     .filter((elt) => showItem(elt, searchValue))

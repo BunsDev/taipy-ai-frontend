@@ -19,7 +19,7 @@ class _Entity:
     _ID_PREFIX: str
     _MANAGER_NAME: str
     _is_in_context = False
-    _in_context_attributes_changed_collector: List
+    _in_context_attributes_changed_collector: List = []
 
     def __enter__(self):
         self._is_in_context = True
@@ -33,8 +33,7 @@ class _Entity:
             for to_delete_key in self._properties._pending_deletions:
                 self._properties.data.pop(to_delete_key, None)
             self._properties.data.update(self._properties._pending_changes)
-        _Reloader._get_manager(self._MANAGER_NAME)._set(self)
+        _Reloader()._get_manager(self._MANAGER_NAME)._set(self)
 
         for event in self._in_context_attributes_changed_collector:
             Notifier.publish(event)
-        _Reloader._get_manager(self._MANAGER_NAME)._set(self)

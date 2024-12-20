@@ -36,8 +36,7 @@ module.exports = (_env, options) => {
     // Enable sourcemaps for debugging webpack's output.
     devtool: options.mode === "development" && "inline-source-map",
     resolve: {
-      // All the code is TypeScript
-      extensions: [".ts", ".tsx"],
+      extensions: [".ts", ".tsx", ".js"],
     },
 
     module: {

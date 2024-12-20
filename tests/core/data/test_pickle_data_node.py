@@ -12,6 +12,7 @@
 import os
 import pathlib
 import pickle
+import re
 from datetime import datetime, timedelta
 from time import sleep
 
@@ -23,6 +24,7 @@ from pandas.testing import assert_frame_equal
 from taipy.common.config import Config
 from taipy.common.config.common.scope import Scope
 from taipy.common.config.exceptions.exceptions import InvalidConfigurationId
+from taipy.core.common._utils import _normalize_path
 from taipy.core.data._data_manager import _DataManager
 from taipy.core.data._data_manager_factory import _DataManagerFactory
 from taipy.core.data.pickle import PickleDataNode
@@ -220,7 +222,7 @@ class TestPickleDataNodeEntity:
         assert not reasons
         assert not reasons
         assert len(reasons._reasons) == 1
-        assert str(NoFileToDownload(path, dn.id)) in reasons.reasons
+        assert str(NoFileToDownload(_normalize_path(path), dn.id)) in reasons.reasons
 
     def test_is_not_downloadable_not_a_file(self):
         path = os.path.join(pathlib.Path(__file__).parent.resolve(), "data_sample")
@@ -228,12 +230,12 @@ class TestPickleDataNodeEntity:
         reasons = dn.is_downloadable()
         assert not reasons
         assert len(reasons._reasons) == 1
-        assert str(NotAFile(path, dn.id)) in reasons.reasons
+        assert str(NotAFile(_normalize_path(path), dn.id)) in reasons.reasons
 
     def test_get_download_path(self):
         path = os.path.join(pathlib.Path(__file__).parent.resolve(), "data_sample/example.p")
         dn = PickleDataNode("foo", Scope.SCENARIO, properties={"path": path})
-        assert dn._get_downloadable_path() == path
+        assert re.split(r"[\\/]", dn._get_downloadable_path()) == re.split(r"[\\/]", path)
 
     def test_get_download_path_with_not_existed_file(self):
         dn = PickleDataNode("foo", Scope.SCENARIO, properties={"path": "NOT_EXISTED.p"})
@@ -254,7 +256,7 @@ class TestPickleDataNodeEntity:
 
         assert_frame_equal(dn.read(), upload_content)  # The content of the dn should change to the uploaded content
         assert dn.last_edit_date > old_last_edit_date
-        assert dn.path == old_pickle_path  # The path of the dn should not change
+        assert dn.path == _normalize_path(old_pickle_path)  # The path of the dn should not change
 
     def test_upload_with_upload_check(self, pickle_file_path, tmpdir_factory):
         old_pickle_path = tmpdir_factory.mktemp("data").join("df.p").strpath
@@ -299,7 +301,7 @@ class TestPickleDataNodeEntity:
 
         assert_frame_equal(dn.read(), old_data)  # The content of the dn should not change when upload fails
         assert dn.last_edit_date == old_last_edit_date  # The last edit date should not change when upload fails
-        assert dn.path == old_pickle_path  # The path of the dn should not change
+        assert dn.path == _normalize_path(old_pickle_path)  # The path of the dn should not change
 
         # The upload should succeed when check_data_column() return True
         assert dn._upload(pickle_file_path, upload_checker=check_data_column)

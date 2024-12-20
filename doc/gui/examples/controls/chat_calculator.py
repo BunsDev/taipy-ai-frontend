@@ -16,20 +16,19 @@
 # Human-computer dialog UI based on the chat control.
 # -----------------------------------------------------------------------------------------
 from math import cos, pi, sin, sqrt, tan  # noqa: F401
-from typing import Optional
 
 from taipy.gui import Gui
 
 # The user interacts with the Python interpreter
 users = ["human", "Result"]
-messages: list[tuple[str, str, str, Optional[str]]] = []
+messages: list[tuple[str, str, str]] = []
 
 
 def evaluate(state, var_name: str, payload: dict):
     # Retrieve the callback parameters
-    (_, _, expression, sender_id, image_url) = payload.get("args", [])
+    (_, _, expression, sender_id, _) = payload.get("args", [])
     # Add the input content as a sent message
-    messages.append((f"{len(messages)}", expression, sender_id, image_url))
+    messages.append((f"{len(messages)}", expression, sender_id))
     # Default message used if evaluation fails
     result = "Invalid expression"
     try:
@@ -38,12 +37,12 @@ def evaluate(state, var_name: str, payload: dict):
     except Exception:
         pass
     # Add the result as an incoming message
-    messages.append((f"{len(messages)}", result, users[1], None))
+    messages.append((f"{len(messages)}", result, users[1]))
     state.messages = messages
 
 
 page = """
-<|{messages}|chat|users={users}|sender_id={users[0]}|on_action=evaluate|>
+<|{messages}|chat|users={users}|sender_id={users[0]}|on_action=evaluate|don't allow_send_images|>
 """
 
 Gui(page).run(title="Chat - Calculator")

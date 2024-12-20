@@ -9,12 +9,19 @@
 # an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
 # specific language governing permissions and limitations under the License.
 
+import base64
+
 from taipy.gui.extension import Element, ElementLibrary, ElementProperty, PropertyType
 
 
 class ExampleLibrary(ElementLibrary):
     def __init__(self) -> None:
         # Initialize the set of visual elements for this extension library
+
+        logo_path = self.get_resource("assets/logo.png")
+        with open(logo_path, "rb") as f:
+            logo_base64 = base64.b64encode(f.read()).decode("utf-8")
+
         self.elements = {
             # A static element that displays its properties in a fraction
             "fraction": Element(
@@ -42,6 +49,30 @@ class ExampleLibrary(ElementLibrary):
                 # element, exported as GameTable in front-end/src/index.ts
                 # react_component="GameTable",
             ),
+            "visual_label_list": Element(
+                "lov",
+                {
+                    "lov": ElementProperty(PropertyType.lov),
+                    "sort": ElementProperty(PropertyType.string),
+                },
+                # The name of the React component (VisualLabelList) that implements this custom
+                # element, exported as LabeledItemList in front-end/src/index.ts
+                react_component="VisualLabelList",
+            ),
+            "logo_with_text": Element(
+                "text",
+                {
+                    "text": ElementProperty(PropertyType.string),
+                    "logo_path": ElementProperty(PropertyType.string, default_value=logo_base64),
+                },
+            ),
+            "dashboard": Element(
+                "data",
+                {
+                    "data": ElementProperty(PropertyType.dict),
+                    "layout": ElementProperty(PropertyType.dict),
+                },
+            )
         }
 
     # The implementation of the rendering for the "fraction" static element
@@ -67,4 +98,7 @@ class ExampleLibrary(ElementLibrary):
 
     def get_scripts(self) -> list[str]:
         # Only one JavaScript bundle for this library.
-        return ["front-end/dist/exampleLibrary.js"]
+        return [
+            "front-end/dist/exampleLibrary.js",
+            "front-end/scripts/logoAnimation.js",
+        ]

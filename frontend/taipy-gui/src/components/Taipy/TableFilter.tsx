@@ -35,10 +35,14 @@ import { getDateTime, getTypeFromDf } from "../../utils";
 import { getSuffixedClassNames } from "./utils";
 import { MatchCase } from "../icons/MatchCase";
 
+export interface FilterColumnDesc extends ColumnDesc {
+    params?: number[];
+}
+
 interface TableFilterProps {
     fieldHeader?: string;
     fieldHeaderTooltip?: string;
-    columns: Record<string, ColumnDesc>;
+    columns: Record<string, FilterColumnDesc>;
     colsOrder?: Array<string>;
     onValidate: (data: Array<FilterDesc>) => void;
     appliedFilters?: Array<FilterDesc>;
@@ -51,7 +55,7 @@ interface FilterRowProps {
     fieldHeader?: string;
     fieldHeaderTooltip?: string;
     filter?: FilterDesc;
-    columns: Record<string, ColumnDesc>;
+    columns: Record<string, FilterColumnDesc>;
     colsOrder: Array<string>;
     setFilter: (idx: number, fd: FilterDesc, remove?: boolean) => void;
 }
@@ -98,7 +102,7 @@ const getActionsByType = (colType?: string) =>
     (colType === "any" ? { ...actionsByType.string, ...actionsByType.number } : actionsByType.string);
 
 const getFilterDesc = (
-    columns: Record<string, ColumnDesc>,
+    columns: Record<string, FilterColumnDesc>,
     colId?: string,
     act?: string,
     val?: string,
@@ -118,13 +122,14 @@ const getFilterDesc = (
                         ? colType === "number"
                             ? parseFloat(val)
                             : colType === "boolean"
-                                ? val === "1"
-                                : colType === "date"
-                                    ? getDateTime(val)
-                                    : val
+                            ? val === "1"
+                            : colType === "date"
+                            ? getDateTime(val)
+                            : val
                         : val,
                 type: colType,
                 matchCase: !!matchCase,
+                params: columns[colId].params,
             } as FilterDesc;
         } catch (e) {
             console.info("Could not parse value ", val, e);
@@ -231,7 +236,11 @@ const FilterRow = (props: FilterRowProps) => {
                 <FormControl margin="dense">
                     <InputLabel>{fieldHeader}</InputLabel>
                     <Tooltip title={fieldHeaderTooltip} placement="top">
-                        <Select value={colId || ""} onChange={onColSelect} input={<OutlinedInput label={fieldHeader} />}>
+                        <Select
+                            value={colId || ""}
+                            onChange={onColSelect}
+                            input={<OutlinedInput label={fieldHeader} />}
+                        >
                             {colsOrder.map((col) =>
                                 columns[col].filter ? (
                                     <MenuItem key={col} value={col}>
@@ -352,7 +361,7 @@ const TableFilter = (props: TableFilterProps) => {
         onValidate,
         appliedFilters,
         className = "",
-        filteredCount
+        filteredCount,
     } = props;
 
     const [showFilter, setShowFilter] = useState(false);

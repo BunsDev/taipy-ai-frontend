@@ -50,6 +50,9 @@ class TaskConfig(Section):
     (*exposed_type* field) of the input data nodes and returning results compatible with the
     data type (*exposed_type* field) of the outputs list."""
 
+    # NOTE: # {task_type: ["required_key1"]}
+    _REQUIRED_PROPERTIES: Dict[str, List[str]] = {}
+
     def __init__(
         self,
         id: str,

@@ -17,6 +17,7 @@ import { useTheme } from "@mui/material";
 import Box from "@mui/material/Box";
 import Skeleton from "@mui/material/Skeleton";
 import Tooltip from "@mui/material/Tooltip";
+import merge from "lodash/merge";
 import { nanoid } from "nanoid";
 import {
     Config,
@@ -279,6 +280,11 @@ const updateArrays = (sel: number[][], val: number[], idx: number) => {
     return sel;
 };
 
+const getDataKey = (columns?: Record<string, ColumnDesc>, decimators?: string[]): [string[], string] => {
+    const backCols = columns ? Object.values(columns).map((col) => col.dfid) : [];
+    return [backCols, backCols.join("-") + (decimators ? `--${decimators.join("")}` : "")];
+};
+
 const Chart = (props: ChartProp) => {
     const {
         title = "",
@@ -300,7 +306,7 @@ const Chart = (props: ChartProp) => {
     const theme = useTheme();
     const module = useModule();
 
-    const refresh = useMemo(() => data?.__taipy_refresh !== undefined ? nanoid() : false, [data]);
+    const refresh = useMemo(() => (data?.__taipy_refresh !== undefined ? nanoid() : false), [data]);
     const className = useClassNames(props.libClassName, props.dynamicClassName, props.className);
     const active = useDynamicProperty(props.active, props.defaultActive, true);
     const render = useDynamicProperty(props.render, props.defaultRender, true);
@@ -347,9 +353,8 @@ const Chart = (props: ChartProp) => {
     const config = useDynamicJsonProperty(props.config, props.defaultConfig, defaultConfig);
 
     useEffect(() => {
-        if (updateVarName && (refresh || !data[dataKey])) {
-            const backCols = Object.values(config.columns).map((col) => col.dfid);
-            const dtKey = backCols.join("-") + (config.decimators ? `--${config.decimators.join("")}` : "");
+        if (updateVarName) {
+            const [backCols, dtKey] = getDataKey(config.columns, config.decimators);
             setDataKey(dtKey);
             if (refresh || !data[dtKey]) {
                 dispatch(
@@ -394,12 +399,10 @@ const Chart = (props: ChartProp) => {
             layout.template = template;
         }
         if (props.figure) {
-            return {
-                ...(props.figure[0].layout as Partial<Layout>),
-                ...layout,
+            return merge({}, props.figure[0].layout as Partial<Layout>, layout, {
                 title: title || layout.title || (props.figure[0].layout as Partial<Layout>).title,
                 clickmode: "event+select",
-            } as Layout;
+            });
         }
         return {
             ...layout,
@@ -446,8 +449,12 @@ const Chart = (props: ChartProp) => {
         if (props.figure) {
             return lastDataPl.current;
         }
-        if (data.__taipy_refresh !== undefined && lastDataPl.current) {
-            return lastDataPl.current;
+        if (data.__taipy_refresh !== undefined) {
+            return lastDataPl.current || [];
+        }
+        const dtKey = getDataKey(config.columns, config.decimators)[1];
+        if (!dataKey.startsWith(dtKey)) {
+            return lastDataPl.current || [];
         }
         const datum = data[dataKey];
         lastDataPl.current = datum
@@ -529,7 +536,7 @@ const Chart = (props: ChartProp) => {
                   }
                   return ret as Data;
               })
-            : [];
+            : lastDataPl.current || [];
         return lastDataPl.current;
     }, [props.figure, selected, data, config, dataKey]);
 
@@ -560,15 +567,10 @@ const Chart = (props: ChartProp) => {
         (eventData: PlotRelayoutEvent) => {
             onRangeChange && dispatch(createSendActionNameAction(id, module, { action: onRangeChange, ...eventData }));
             if (config.decimators && !config.types.includes("scatter3d")) {
-                const backCols = Object.values(config.columns).map((col) => col.dfid);
-                const eventDataKey = Object.entries(eventData)
+                const [backCols, dtKeyBase] = getDataKey(config.columns, config.decimators);
+                const dtKey = `${dtKeyBase}--${Object.entries(eventData)
                     .map(([k, v]) => `${k}=${v}`)
-                    .join("-");
-                const dtKey =
-                    backCols.join("-") +
-                    (config.decimators ? `--${config.decimators.join("")}` : "") +
-                    "--" +
-                    eventDataKey;
+                    .join("-")}`;
                 setDataKey(dtKey);
                 dispatch(
                     createRequestChartUpdateAction(

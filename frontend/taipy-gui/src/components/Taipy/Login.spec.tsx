@@ -65,4 +65,10 @@ describe("Login Component", () => {
             type: "SEND_ACTION_ACTION",
         });
     });
+    it("shows additional buttons", async () => {
+        const { getByText } = render(<Login labels={JSON.stringify(["Button one", "Second button"])} />);
+        const elt = getByText("Button one");
+        expect(elt).toBeInTheDocument();
+        expect(elt.tagName).toBe("BUTTON");
+    });
 });

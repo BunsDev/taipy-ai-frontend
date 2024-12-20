@@ -77,7 +77,7 @@ class _Builder:
         "lov",
         "row_class_name",
         "cell_class_name",
-        "format_fn"
+        "format_fn",
     }
 
     def __init__(
@@ -299,7 +299,7 @@ class _Builder:
             except ValueError:
                 raise ValueError(f"Property {name} expects a number for control {self.__control_type}") from None
         elif isinstance(value, numbers.Number):
-            val = value # type: ignore[assignment]
+            val = value  # type: ignore[assignment]
         else:
             raise ValueError(
                 f"Property {name} expects a number for control {self.__control_type}, received {type(value)}"
@@ -447,7 +447,7 @@ class _Builder:
                 else:
                     self.__gui._add_type_for_var(value_name, t.cast(str, var_type))
             if adapter is not None:
-                self.__gui._add_adapter_for_type(var_type, adapter) # type: ignore[arg-type]
+                self.__gui._add_adapter_for_type(var_type, adapter)  # type: ignore[arg-type]
 
             if default_lov is not None and lov:
                 for elt in lov:
@@ -1000,6 +1000,24 @@ class _Builder:
             ),
         )
         return self.__set_react_attribute(_to_camel_case(property_name), _get_client_var_name(front_var))
+
+    def _set_indexed_icons(self, name="use_icon"):
+        global_icon = self.__attributes.get(name)
+        indexed = self.get_name_indexed_property(name)
+        global_bool = _is_true(global_icon) if global_icon is not None and _is_boolean(global_icon) else None
+        if global_icon is not None and not indexed:
+            if global_bool is not None:
+                self.set_boolean_attribute(name, global_bool)
+            else:
+                self.__set_json_attribute(_to_camel_case(name), {"__default": str(global_icon)})
+        elif indexed:
+            icons = {}
+            if global_icon is not None:
+                icons["__default"] = global_bool if global_bool is not None else str(global_icon)
+            for k, v in indexed.items():
+                icons[k] = _is_true(v) if _is_boolean(v) else str(v)
+            self.__set_json_attribute(_to_camel_case(name), icons)
+        return self
 
     def set_attributes(self, attributes: t.List[tuple]):  # noqa: C901
         """

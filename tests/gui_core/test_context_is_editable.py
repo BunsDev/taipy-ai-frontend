@@ -254,10 +254,9 @@ class TestGuiCoreContext_is_editable:
                 MockState(assign=assign),
                 "",
                 {
-                    "args": [
-                        {"id": a_datanode.id},
-                    ],
-                    "error_id": "error_var",
+                    "args": [{
+                        "id": a_datanode.id,
+                        "error_id": "error_var"}],
                 },
             )
             assign.assert_called()
@@ -269,12 +268,7 @@ class TestGuiCoreContext_is_editable:
                 gui_core_context.update_data(
                     MockState(assign=assign),
                     "",
-                    {
-                        "args": [
-                            {"id": a_datanode.id},
-                        ],
-                        "error_id": "error_var",
-                    },
+                    {"args": [{"id": a_datanode.id, "error_id": "error_var"}]},
                 )
                 assign.assert_called_once()
                 assert assign.call_args.args[0] == "error_var"

@@ -42,8 +42,62 @@ describe("Status Component", () => {
         await userEvent.click(elt);
         expect(myClose).toHaveBeenCalled();
     })
-    it("displays the icon", async () => {
-        const {getByTestId} = render(<Status value={status} icon={<PlusOneOutlined/>} onClose={jest.fn()} />);
+    it("displays the open icon", async () => {
+        const {getByTestId} = render(<Status value={status} openedIcon={<PlusOneOutlined/>} onClose={jest.fn()} />);
         getByTestId("PlusOneOutlinedIcon");
     })
+     // Test case for Inline SVG content
+     it("renders an Avatar with inline SVG", () => {
+        const inlineSvg = "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><circle cx='12' cy='12' r='10' fill='red'/></svg>";
+        const { getByTestId } = render(<Status value={status} icon={inlineSvg} />);
+        const avatar = getByTestId("Avatar");
+        // Inline SVG should be rendered as inner HTML inside the Avatar
+        const svgElement = avatar.querySelector("svg");
+        expect(svgElement).toBeInTheDocument();
+    });
+
+    // Test case for Text content (default behavior)
+    it("renders Avatar with initial when icon is text", () => {
+        const { getByTestId } = render(<Status value={status} icon="Text content" />);
+        const avatar = getByTestId("Avatar");
+        expect(avatar).toHaveTextContent("S");
+    });
+
+    // Test case for empty content
+    it("renders Avatar with initial when no icon is provided", () => {
+        const { getByTestId } = render(<Status value={status} />);
+        const avatar = getByTestId("Avatar");
+        expect(avatar).toHaveTextContent("S");
+    });
+
+    // Test case for an invalid content type (like a non-SVG string)
+    it("renders Avatar with initial if icon is invalid", () => {
+        const { getByTestId } = render(<Status value={status} icon="invalid-content" />);
+        const avatar = getByTestId("Avatar");
+        expect(avatar).toHaveTextContent("S");
+    });
+
+    it("renders an avatar with initial when icon is false", () => {
+        const statusWithoutIcons: StatusType = { status: "warning", message: "Warning detected" };
+
+        const { getByTestId } = render(<Status value={statusWithoutIcons} icon={false} />);
+
+        // Check if the avatar has the initial of the status (W)
+        const avatar = getByTestId("Avatar");
+        expect(avatar).toHaveTextContent("W");
+    });
+
+    it("renders the correct icon when icon is true", () => {
+        const statusWithIcons: StatusType = { status: "success", message: "Operation successful" };
+
+        const { getByTestId } = render(<Status value={statusWithIcons} icon={true} />);
+
+        // Check if the Avatar element contains the icon (CheckCircleIcon for success status)
+        const avatar = getByTestId("Avatar");
+
+        // Check if the avatar contains the appropriate icon, in this case CheckCircleIcon
+        // Since CheckCircleIcon is rendered as part of the Avatar, we can check for its presence by looking for SVGs or icon classes
+        const icon = avatar.querySelector("svg");
+        expect(icon).toBeInTheDocument();  // The icon should be present inside the Avatar
+    });
 });

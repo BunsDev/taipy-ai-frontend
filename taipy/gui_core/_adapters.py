@@ -17,7 +17,7 @@ import typing as t
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, time
 from enum import Enum
 from operator import attrgetter, contains, eq, ge, gt, le, lt, ne
 
@@ -44,7 +44,7 @@ from taipy.gui._warnings import _warn
 from taipy.gui.gui import _DoNotUpdate
 from taipy.gui.utils import _is_boolean, _is_true, _TaipyBase
 
-from .filters import DataNodeFilter, ScenarioFilter, _Filter
+from .filters import DataNodeFilter, ParamType, ScenarioFilter, _Filter
 
 
 # prevent gui from trying to push scenario instances to the front-end
@@ -360,7 +360,7 @@ def _invoke_action(
     return True
 
 
-def _get_entity_property(col: str, *types: t.Type):
+def _get_entity_property(col: str, *types: t.Type, params: t.Optional[t.List[t.Any]] = None):
     col_parts = col.split("(", 2)  # handle the case where the col is a method (ie get_simple_label())
     col_fn = (
         next(
@@ -372,25 +372,24 @@ def _get_entity_property(col: str, *types: t.Type):
     )
 
     def sort_key(entity: t.Union[Scenario, Cycle, Sequence, DataNode]):
+        val: t.Any = "Z"
         # we compare only strings
         if isinstance(entity, types):
             if isinstance(entity, Cycle):
-                the_col = "creation_date"
+                the_col = "creation_date" if col == "creation_date" else None
                 the_fn = None
             else:
                 the_col = col
                 the_fn = col_fn
-            try:
-                val = attrgetter(the_fn or the_col)(entity)
-                if the_fn:
-                    val = val()
-            except AttributeError as e:
-                if _is_debugging():
-                    _warn(f"sort_key({entity.id}):", e)
-                val = ""
-        else:
-            val = ""
-        return val.isoformat() if isinstance(val, (datetime, date)) else str(val)
+            if the_col:
+                try:
+                    val = attrgetter(the_fn or the_col)(entity)
+                    if the_fn:
+                        val = val(*params) if params else val()
+                except Exception as e:
+                    if _is_debugging():
+                        _warn(f"sort_key({entity.id}):", e)
+        return val.isoformat() if isinstance(val, (datetime, date, time)) else str(val)
 
     return sort_key
 
@@ -450,9 +449,10 @@ class _GuiCoreProperties(ABC):
                         attr.get_property(),
                         attr.get_type(),
                         self.get_enums().get(attr.get_property()),
+                        [p.value for p in attr.get_params() or []],
                     )
                     if self.full_desc()
-                    else (attr.label, attr.get_property())
+                    else (attr.label, attr.get_property(), [p.value for p in attr.get_params() or []])
                     for attr in f_list
                 ]
             )
@@ -567,6 +567,9 @@ class _GuiCoreDatanodeProperties(_GuiCoreProperties):
         _GuiCorePropDesc(DataNodeFilter("Last edit date", datetime, "last_edit_date"), for_sort=True),
         _GuiCorePropDesc(DataNodeFilter("Expiration date", datetime, "expiration_date"), extended=True, for_sort=True),
         _GuiCorePropDesc(DataNodeFilter("Expired", bool, "is_expired"), extended=True),
+        _GuiCorePropDesc(
+            DataNodeFilter("Rank", int, "_get_rank()", [ParamType.ScenarioConfigId]), for_sort=True
+        ),
     ]
     __DN_VALIDITY = None
 

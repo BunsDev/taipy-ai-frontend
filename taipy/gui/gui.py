@@ -25,7 +25,7 @@ import uuid
 import warnings
 from importlib import metadata, util
 from importlib.util import find_spec
-from inspect import currentframe, getabsfile, ismethod, ismodule
+from inspect import currentframe, getabsfile, iscoroutinefunction, ismethod, ismodule
 from pathlib import Path
 from threading import Thread, Timer
 from types import FrameType, FunctionType, LambdaType, ModuleType, SimpleNamespace
@@ -73,7 +73,7 @@ from .extension.library import Element, ElementLibrary
 from .page import Page
 from .partial import Partial
 from .server import _Server
-from .state import State, _GuiState
+from .state import State, _AsyncState, _GuiState
 from .types import _WsType
 from .utils import (
     _delscopeattr,
@@ -115,6 +115,7 @@ from .utils._evaluator import _Evaluator
 from .utils._variable_directory import _is_moduled_variable, _VariableDirectory
 from .utils.chart_config_builder import _build_chart_config
 from .utils.table_col_builder import _enhance_columns
+from .utils.threads import _invoke_async_callback
 
 
 class Gui:
@@ -173,6 +174,9 @@ class Gui:
     __shared_variables: t.List[str] = []
 
     __content_providers: t.Dict[type, t.Callable[..., str]] = {}
+
+    # See set_unsupported_data_converter()
+    __unsupported_data_converter: t.Optional[t.Callable] = None
 
     def __init__(
         self,
@@ -447,7 +451,6 @@ class Gui:
         Arguments:
             content_type: The type of the content that triggers the content provider.
             content_provider: The function that converts content of type *type* into an HTML string.
-
         """  # noqa: E501
         if Gui.__content_providers.get(content_type):
             _warn(f"The type {content_type} is already associated with a provider.")
@@ -737,7 +740,7 @@ class Gui:
         elif rel_var and isinstance(current_value, _TaipyLovValue):  # pragma: no cover
             lov_holder = _getscopeattr_drill(self, self.__evaluator.get_hash_from_expr(rel_var))
             if isinstance(lov_holder, _TaipyLov):
-                if isinstance(value, str):
+                if isinstance(value, (str, list)):
                     val = value if isinstance(value, list) else [value]
                     elt_4_ids = self.__adapter._get_elt_per_ids(lov_holder.get_name(), lov_holder.get())
                     ret_val = [elt_4_ids.get(x, x) for x in val]
@@ -1142,6 +1145,40 @@ class Gui:
         if isinstance(state_context, dict):
             for var, val in state_context.items():
                 self._update_var(var, val, True, forward=False)
+
+    @staticmethod
+    def set_unsupported_data_converter(converter: t.Optional[t.Callable[[t.Any], t.Any]]) -> None:
+        """Set a custom converter for unsupported data types.
+
+        This function allows specifying a custom conversion function for data types that cannot
+        be serialized automatically. When Taipy GUI encounters an unsupported type in the data
+        being serialized, it will invoke the provided *converter* function. The returned value
+        from this function will then be serialized if possible.
+
+        Arguments:
+            converter: A function that converts a value with an unsupported data type (the only
+                parameter to the function) into data with a supported data type (the returned value
+                from the function).</br>
+                If set to `None`, it removes any existing converter.
+        """
+        Gui.__unsupported_data_converter = converter
+
+    @staticmethod
+    def _convert_unsupported_data(value: t.Any) -> t.Optional[t.Any]:
+        """
+        Handles unsupported data by invoking the converter if there is one.
+
+        Arguments:
+            value: The unsupported data encountered.
+
+        Returns:
+            The transformed data or None if no transformation is possible.
+        """
+        try:
+            return Gui.__unsupported_data_converter(value) if _is_function(Gui.__unsupported_data_converter) else None  # type: ignore
+        except Exception as e:
+            _warn(f"Error transforming data: {str(e)}")
+            return None
 
     def __request_data_update(self, var_name: str, payload: t.Any) -> None:
         # Use custom attrgetter function to allow value binding for _MapDict
@@ -1578,7 +1615,12 @@ class Gui:
 
     def _call_function_with_state(self, user_function: t.Callable, args: t.Optional[t.List[t.Any]] = None) -> t.Any:
         cp_args = [] if args is None else args.copy()
-        cp_args.insert(0, self.__get_state())
+        cp_args.insert(
+            0,
+            _AsyncState(t.cast(_GuiState, self.__get_state()))
+            if iscoroutinefunction(user_function)
+            else self.__get_state(),
+        )
         argcount = user_function.__code__.co_argcount
         if argcount > 0 and ismethod(user_function):
             argcount -= 1
@@ -1587,7 +1629,10 @@ class Gui:
         else:
             cp_args = cp_args[:argcount]
         with self.__event_manager:
-            return user_function(*cp_args)
+            if iscoroutinefunction(user_function):
+                return _invoke_async_callback(user_function, cp_args)
+            else:
+                return user_function(*cp_args)
 
     def _set_module_context(self, module_context: t.Optional[str]) -> t.ContextManager[None]:
         return self._set_locals_context(module_context) if module_context is not None else contextlib.nullcontext()

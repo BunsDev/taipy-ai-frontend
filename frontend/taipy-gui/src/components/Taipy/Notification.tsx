@@ -16,32 +16,32 @@ import { SnackbarKey, useSnackbar, VariantType } from "notistack";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 
-import { AlertMessage, createDeleteAlertAction } from "../../context/taipyReducers";
+import { NotificationMessage, createDeleteAlertAction } from "../../context/taipyReducers";
 import { useDispatch } from "../../utils/hooks";
 
 interface NotificationProps {
-    alerts: AlertMessage[];
+    notifications: NotificationMessage[];
 }
 
-const TaipyNotification = ({ alerts }: NotificationProps) => {
-    const alert = alerts.length ? alerts[0] : undefined;
+const TaipyNotification = ({ notifications }: NotificationProps) => {
+    const notification = notifications.length ? notifications[0] : undefined;
     const { enqueueSnackbar, closeSnackbar } = useSnackbar();
     const dispatch = useDispatch();
 
-    const resetAlert = useCallback(
+    const resetNotification = useCallback(
         (key: SnackbarKey) => () => {
             closeSnackbar(key);
         },
         [closeSnackbar]
     );
 
-    const notifAction = useCallback(
+    const notificationAction = useCallback(
         (key: SnackbarKey) => (
-            <IconButton size="small" aria-label="close" color="inherit" onClick={resetAlert(key)}>
+            <IconButton size="small" aria-label="close" color="inherit" onClick={resetNotification(key)}>
                 <CloseIcon fontSize="small" />
             </IconButton>
         ),
-        [resetAlert]
+        [resetNotification]
     );
 
     const faviconUrl = useMemo(() => {
@@ -55,25 +55,27 @@ const TaipyNotification = ({ alerts }: NotificationProps) => {
     }, []);
 
     useEffect(() => {
-        if (alert) {
-            const notificationId = alert.notificationId || "";
-            if (alert.atype === "") {
+        if (notification) {
+            const notificationId = notification.notificationId || "";
+            if (notification.atype === "") {
                 closeSnackbar(notificationId);
             } else {
-                enqueueSnackbar(alert.message, {
-                    variant: alert.atype as VariantType,
-                    action: notifAction,
-                    autoHideDuration: alert.duration,
+                enqueueSnackbar(notification.message, {
+                    variant: notification.atype as VariantType,
+                    action: notificationAction,
+                    autoHideDuration: notification.duration,
                     key: notificationId,
                 });
-                alert.system && new Notification(document.title || "Taipy", { body: alert.message, icon: faviconUrl });
+                notification.system &&
+                    new Notification(document.title || "Taipy", { body: notification.message, icon: faviconUrl });
             }
             dispatch(createDeleteAlertAction(notificationId));
         }
-    }, [alert, enqueueSnackbar, closeSnackbar, notifAction, faviconUrl, dispatch]);
+    }, [notification, enqueueSnackbar, closeSnackbar, notificationAction, faviconUrl, dispatch]);
+
     useEffect(() => {
-        alert?.system && window.Notification && Notification.requestPermission();
-    }, [alert?.system]);
+        notification?.system && window.Notification && Notification.requestPermission();
+    }, [notification?.system]);
 
     return null;
 };

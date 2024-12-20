@@ -40,6 +40,7 @@ interface LoginProps extends TaipyBaseProps {
     onAction?: string;
     defaultMessage?: string;
     message?: string;
+    labels?: string;
 }
 
 const closeSx: SxProps<Theme> = {
@@ -64,13 +65,24 @@ const Login = (props: LoginProps) => {
 
     const className = useClassNames(props.libClassName, props.dynamicClassName, props.className);
 
+    const labels = useMemo(() => {
+        if (props.labels) {
+            try {
+                return JSON.parse(props.labels) as string[];
+            } catch (e) {
+                console.info(`Error parsing login.labels\n${(e as Error).message || e}`);
+            }
+        }
+        return [];
+    }, [props.labels]);
+
     const handleAction = useCallback(
         (evt: MouseEvent<HTMLElement>) => {
-            const { close } = evt?.currentTarget.dataset || {};
+            const { close, idx } = evt?.currentTarget.dataset || {};
             const args = close
                 ? [null, null, document.location.pathname.substring(1)]
-                : [user, password, document.location.pathname.substring(1)];
-            setShowProgress(true);
+                : idx ? [user, password, document.location.pathname.substring(1), parseInt(idx, 10)]: [user, password, document.location.pathname.substring(1)];
+            setShowProgress(!idx);
             dispatch(createSendActionNameAction(id, module, onAction, ...args));
         },
         [user, password, dispatch, id, onAction, module]
@@ -168,6 +180,11 @@ const Login = (props: LoginProps) => {
                 <DialogContentText>{message || defaultMessage}</DialogContentText>
             </DialogContent>
             <DialogActions>
+                {labels.map((label, i) => (
+                    <Button onClick={handleAction} key={"label" + i} data-idx={i}>
+                        {label}
+                    </Button>
+                ))}
                 <Button
                     variant="outlined"
                     className={getSuffixedClassNames(className, "-button")}
